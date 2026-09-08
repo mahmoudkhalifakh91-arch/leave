@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Employee } from '../types';
 
 interface AccountModalProps {
   isOpen: boolean;
   currentEmail: string;
   employees: Employee[];
-  onSave: (email: string) => void;
+  onSave: (email: string, employee?: Employee) => void;
   onClear?: () => void;
   onClose?: () => void;
   canClose?: boolean;
@@ -24,6 +24,14 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   const [selectedEmpCode, setSelectedEmpCode] = useState('');
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    if (isOpen) {
+      setEmailInput(currentEmail || '');
+      setSelectedEmpCode('');
+      setError('');
+    }
+  }, [isOpen, currentEmail]);
+
   if (!isOpen) return null;
 
   const handleConfirm = (e: React.FormEvent) => {
@@ -40,7 +48,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       return;
     }
     setError('');
-    onSave(clean);
+    const matchedEmp = employees.find(em => em.code === selectedEmpCode);
+    onSave(clean, matchedEmp);
   };
 
   const handleSelectEmployee = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -56,7 +65,15 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 font-['Tajawal']" dir="rtl">
+    <div 
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 font-['Tajawal']" 
+      dir="rtl"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && canClose && onClose) {
+          onClose();
+        }
+      }}
+    >
       <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         <div className="bg-gradient-to-l from-[#1e3a8a] to-blue-600 p-6 text-white text-right relative">
           {canClose && onClose && (

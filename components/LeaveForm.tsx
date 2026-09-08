@@ -10,6 +10,7 @@ interface LeaveFormProps {
   lastSyncTime?: Date | null;
   submitterEmail?: string;
   onOpenAccountModal?: () => void;
+  onAccountSelected?: (email: string, employee?: Employee) => void;
   onSubmit: (data: any) => void;
 }
 
@@ -21,6 +22,7 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({
   lastSyncTime,
   submitterEmail = '',
   onOpenAccountModal,
+  onAccountSelected,
   onSubmit 
 }) => {
   const getTodayStr = () => {
@@ -42,6 +44,11 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({
     reason: '',
     annualBalance: 0
   });
+
+  // حالة بوابة الحساب المباشرة في النموذج
+  const [gateSelectedCode, setGateSelectedCode] = useState('');
+  const [gateEmail, setGateEmail] = useState('');
+  const [gateError, setGateError] = useState('');
 
   const formatDateDisplay = (dateStr: string) => {
     if (!dateStr) return '';
@@ -107,53 +114,40 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({
 
   const hasEmail = Boolean(submitterEmail && submitterEmail.trim());
 
+  const handleGateConfirm = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const clean = gateEmail.trim().toLowerCase();
+    if (!clean) {
+      setGateError('يرجى اختيار موظف من القائمة أو كتابة البريد الإلكتروني');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(clean)) {
+      setGateError('صيغة البريد الإلكتروني غير صحيحة (مثال: user@dakahlia.net)');
+      return;
+    }
+    setGateError('');
+    const matchedEmp = employees.find(em => em.code === gateSelectedCode);
+    if (matchedEmp) {
+      autoFillEmployee('code', matchedEmp.code);
+    }
+    if (onAccountSelected) {
+      onAccountSelected(clean, matchedEmp);
+    }
+  };
+
+  const handleGateSelectEmp = (code: string) => {
+    setGateSelectedCode(code);
+    if (!code) return;
+    const emp = employees.find(em => em.code === code);
+    if (emp) {
+      setGateEmail(`emp.${emp.code}@dakahlia.net`);
+      setGateError('');
+    }
+  };
+
   return (
-    <form 
-      onSubmit={handleSubmit} 
-      className="space-y-8 animate-in fade-in duration-700 relative"
-      onClick={() => {
-        if (!hasEmail && onOpenAccountModal) {
-          onOpenAccountModal();
-        }
-      }}
-    >
-      {/* تنبيه إجباري إذا لم يتم اختيار البريد بعد */}
-      {!hasEmail && (
-        <div 
-          onClick={onOpenAccountModal}
-          className="cursor-pointer bg-gradient-to-r from-amber-600 via-amber-500 to-orange-600 text-white p-5 rounded-3xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 transition-all hover:shadow-2xl border-2 border-amber-400/50"
-        >
-          <div className="flex items-center gap-3.5 text-right">
-            <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-white text-2xl flex-shrink-0 backdrop-blur-sm">
-              <i className="fas fa-lock text-yellow-200"></i>
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-black text-base sm:text-lg">النموذج مقفل: تحديد البريد الإلكتروني إجباري</span>
-                <span className="bg-white/20 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
-                  إجراء أولي
-                </span>
-              </div>
-              <p className="text-xs text-amber-100 mt-1">
-                لا يمكنك تعبئة أو إدخال أي حقل في النموذج قبل تسجيل حسابك لتوثيق وتتبع طلبك في الشيت.
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onOpenAccountModal?.();
-            }}
-            className="w-full sm:w-auto px-6 py-3.5 bg-white text-amber-950 rounded-2xl text-xs sm:text-sm font-black shadow-lg hover:bg-amber-50 active:scale-95 transition-all flex items-center justify-center gap-2 whitespace-nowrap"
-          >
-            <i className="fas fa-key text-amber-600"></i>
-            <span>تحديد البريد لفتح النموذج</span>
-          </button>
-        </div>
-      )}
-
+    <div className="space-y-8 animate-in fade-in duration-700 relative">
       {/* شريط المزامنة مع شيت Google المباشر */}
       <div className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white p-5 rounded-3xl shadow-lg border border-blue-800 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -194,77 +188,139 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({
         </div>
       </div>
 
-      {/* شريط حساب Google */}
-      <div className={`p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm border transition-all ${
-        hasEmail 
-          ? 'bg-slate-50 border-slate-200/90' 
-          : 'bg-amber-50/70 border-amber-300'
-      }`}>
-        <div className="flex items-center gap-3.5">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm text-white ${
-            hasEmail ? 'bg-blue-600' : 'bg-amber-500'
-          }`}>
-            <i className={`fab fa-google text-lg`}></i>
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-black text-gray-900">حساب مقدم الطلب (توثيق المعاملة):</span>
-              {hasEmail ? (
-                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-emerald-200">
-                  تم التحديد بنجاح
-                </span>
-              ) : (
-                <span className="bg-red-100 text-red-800 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-red-200 animate-pulse">
-                  مطلوب إجبارياً
-                </span>
-              )}
+      {/* الحالة 1: لم يتم اختيار الحساب بعد (بوابة إجبارية تمنع ظهور أو كتابة أي حقول) */}
+      {!hasEmail ? (
+        <div className="bg-gradient-to-b from-amber-50/90 via-orange-50/40 to-white rounded-3xl border-2 border-amber-300 shadow-2xl p-6 sm:p-10 space-y-6 text-right">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 border-b border-amber-200/80 pb-6">
+            <div className="w-16 h-16 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-3xl shadow-lg shadow-amber-500/20 shrink-0">
+              <i className="fas fa-user-lock"></i>
             </div>
-            <p className="text-xs text-gray-600 mt-0.5">
-              {hasEmail ? (
-                <>الحساب المعتمد لهذا الطلب: <strong className="font-mono text-blue-900 font-bold" dir="ltr">{submitterEmail}</strong> (يُسجل باسم منشئ الطلب)</>
-              ) : (
-                <span className="text-amber-800 font-bold">لم يتم تحديد البريد الإلكتروني بعد، يرجى الضغط على الزر لتحديده وفتح النموذج.</span>
-              )}
-            </p>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-xl sm:text-2xl font-black text-amber-950">
+                  الخطوة الأولى الإجبارية: تحديد حساب مقدم الطلب
+                </h3>
+                <span className="bg-red-600 text-white text-xs font-black px-3 py-1 rounded-full shadow-sm animate-pulse">
+                  إجباري قبل إدخال أي بيانات
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-amber-900 mt-1.5 font-medium leading-relaxed">
+                يُمنع كتابة أو إدخال أي بيانات في نموذج الإجازات قبل اختيار الحساب، وذلك لضمان تسجيل وتوثيق الطلب باسمك في شيت Google وإرسال الإشعارات بسجل طلباتك حصرياً.
+              </p>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-3 self-stretch sm:self-auto justify-between sm:justify-end">
-          {onOpenAccountModal && (
+
+          <form onSubmit={handleGateConfirm} className="space-y-6 max-w-xl mx-auto py-2">
+            {gateError && (
+              <div className="p-4 bg-red-100/80 border-r-4 border-red-600 rounded-2xl text-xs text-red-900 font-black animate-in fade-in duration-200 flex items-center gap-2">
+                <i className="fas fa-exclamation-circle text-base text-red-600"></i>
+                <span>{gateError}</span>
+              </div>
+            )}
+
+            {/* الخيار 1: اختيار موظف من موظفي المخازن */}
+            <div className="bg-white p-5 rounded-2xl border-2 border-amber-200/80 shadow-sm space-y-2">
+              <label className="block text-xs sm:text-sm font-black text-[#1e3a8a]">
+                <i className="fas fa-users ml-2 text-blue-600"></i>
+                1. اختر اسمك أو كودك من موظفي المخازن المعتمدين:
+              </label>
+              <select
+                value={gateSelectedCode}
+                onChange={(e) => handleGateSelectEmp(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-xs sm:text-sm font-bold text-gray-800 bg-gray-50 focus:bg-white focus:border-[#1e3a8a] outline-none transition-all"
+              >
+                <option value="">-- اضغط هنا لاختيار الموظف --</option>
+                {employees.map(emp => (
+                  <option key={emp.code} value={emp.code}>
+                    {emp.name} ({emp.dept} - كود: {emp.code}) {emp.annualBalance !== undefined ? `[رصيد: ${emp.annualBalance}]` : ''}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[11px] text-gray-500">
+                * عند اختيار الموظف سيتم تعبئة بريده وبياناته تلقائياً.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 my-2">
+              <div className="flex-1 h-px bg-amber-200"></div>
+              <span className="text-xs font-black text-amber-800 bg-amber-100 px-3 py-1 rounded-full">أو</span>
+              <div className="flex-1 h-px bg-amber-200"></div>
+            </div>
+
+            {/* الخيار 2: كتابة البريد يدوياً */}
+            <div className="bg-white p-5 rounded-2xl border-2 border-amber-200/80 shadow-sm space-y-2">
+              <label className="block text-xs sm:text-sm font-black text-[#1e3a8a]">
+                <i className="fas fa-envelope ml-2 text-blue-600"></i>
+                2. أو اكتب بريدك الإلكتروني يدوياً:
+              </label>
+              <input
+                type="email"
+                value={gateEmail}
+                onChange={(e) => {
+                  setGateEmail(e.target.value);
+                  setGateError('');
+                }}
+                placeholder="مثال: name@dakahlia.net"
+                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-xs sm:text-sm font-mono font-bold text-gray-800 bg-gray-50 focus:bg-white focus:border-[#1e3a8a] outline-none text-left"
+                dir="ltr"
+              />
+            </div>
+
             <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenAccountModal();
-              }}
-              className={`text-xs px-3.5 py-2 rounded-xl font-black shadow-sm transition-all flex items-center gap-1.5 ${
-                hasEmail
-                  ? 'text-blue-700 hover:text-blue-900 bg-white hover:bg-blue-50 border border-blue-200'
-                  : 'text-white bg-amber-600 hover:bg-amber-700 active:scale-95 shadow-md'
-              }`}
+              type="submit"
+              className="w-full py-4 px-6 bg-[#1e3a8a] hover:bg-blue-900 active:scale-[0.98] text-white rounded-2xl font-black text-base sm:text-lg shadow-xl shadow-blue-900/20 transition-all flex items-center justify-center gap-3"
             >
-              <i className="fas fa-user-circle text-xs"></i>
-              <span>{hasEmail ? 'تبديل الحساب' : 'تحديد البريد الإلكتروني الآن'}</span>
+              <i className="fas fa-unlock-alt"></i>
+              <span>تأكيد الحساب وفتح نموذج الإجازات</span>
             </button>
-          )}
-          {hasEmail && (
-            <div className="flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 font-bold">
-              <i className="fas fa-check-circle text-emerald-600"></i>
-              <span>مفعل</span>
+          </form>
+        </div>
+      ) : (
+        /* الحالة 2: تم اختيار الحساب وتأكيده - يظهر النموذج الكامل */
+        <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in duration-500">
+          {/* شريط حساب Google المعتمد */}
+          <div className="p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm border bg-slate-50 border-slate-200/90">
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm text-white bg-blue-600">
+                <i className="fab fa-google text-lg"></i>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-gray-900">حساب مقدم الطلب (المعتمد):</span>
+                  <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-emerald-200">
+                    تم التحديد بنجاح
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600 mt-0.5">
+                  الحساب المعتمد لهذا الطلب: <strong className="font-mono text-blue-900 font-bold" dir="ltr">{submitterEmail}</strong> (يُسجل باسم منشئ الطلب)
+                </p>
+              </div>
             </div>
-          )}
-        </div>
-      </div>
+            <div className="flex items-center gap-3 self-stretch sm:self-auto justify-between sm:justify-end">
+              {onOpenAccountModal && (
+                <button
+                  type="button"
+                  onClick={onOpenAccountModal}
+                  className="text-xs px-3.5 py-2 rounded-xl font-black shadow-sm transition-all flex items-center gap-1.5 text-blue-700 hover:text-blue-900 bg-white hover:bg-blue-50 border border-blue-200"
+                >
+                  <i className="fas fa-user-circle text-xs"></i>
+                  <span>تبديل الحساب</span>
+                </button>
+              )}
+              <div className="flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 font-bold">
+                <i className="fas fa-check-circle text-emerald-600"></i>
+                <span>مفعل</span>
+              </div>
+            </div>
+          </div>
 
-      {/* حقول النموذج - يتم تعطيلها بالكامل إذا لم يتم اختيار البريد الإلكتروني */}
-      <fieldset disabled={!hasEmail} className={`space-y-8 transition-all ${!hasEmail ? 'opacity-40 cursor-not-allowed pointer-events-none select-none' : ''}`}>
-
-      {/* حقل تاريخ التحرير يدوياً */}
-      <div className="p-6 bg-blue-50/20 rounded-3xl border-2 border-blue-100/50">
-        <label className={labelClasses}><i className="fas fa-calendar-day ml-2 text-blue-500"></i> تحريراً في (تاريخ الطلب)</label>
-        <div className="max-w-xs">
-          <input type="date" name="issueDate" required className={inputClasses} value={formData.issueDate} onChange={handleChange} />
-        </div>
-      </div>
+          {/* حقل تاريخ التحرير يدوياً */}
+          <div className="p-6 bg-blue-50/20 rounded-3xl border-2 border-blue-100/50">
+            <label className={labelClasses}><i className="fas fa-calendar-day ml-2 text-blue-500"></i> تحريراً في (تاريخ الطلب)</label>
+            <div className="max-w-xs">
+              <input type="date" name="issueDate" required className={inputClasses} value={formData.issueDate} onChange={handleChange} />
+            </div>
+          </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-1">
@@ -430,7 +486,8 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({
           )}
         </button>
       </div>
-      </fieldset>
     </form>
+  )}
+</div>
   );
 };

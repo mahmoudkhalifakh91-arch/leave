@@ -40,7 +40,7 @@ const App: React.FC = () => {
   const handleClearSubmitterEmail = () => {
     setSubmitterEmail('');
     setStoredSubmitterEmail('');
-    setShowAccountModal(false);
+    setShowAccountModal(true);
   };
 
   const syncEmployees = useCallback(async () => {
@@ -229,6 +229,7 @@ const App: React.FC = () => {
               lastSyncTime={lastSyncTime}
               submitterEmail={submitterEmail}
               onOpenAccountModal={() => setShowAccountModal(true)}
+              onAccountSelected={handleUpdateSubmitterEmail}
               onSubmit={handleSubmit} 
             />
           )}
