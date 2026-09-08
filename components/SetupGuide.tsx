@@ -78,15 +78,33 @@ export const SetupGuide: React.FC = () => {
       <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-4">
         <h3 className="font-black text-[#1e3a8a] flex items-center gap-2">
           <i className="fas fa-sitemap"></i>
-          توزيع إيميلات المديرين بالأقسام (Google Apps Script)
+          توزيع إيميلات المديرين بالأقسام واستثناء مدير المخازن
         </h3>
         <p className="text-sm text-gray-600 leading-relaxed">
-          في ملف <code className="bg-gray-100 px-2 py-1 rounded text-red-600">Code.gs</code>، يتم توجيه كل قسم لمديره تلقائياً وفق التوزيع المعتمد:
+          في ملف <code className="bg-gray-100 px-2 py-1 rounded text-red-600">Code.gs</code>، يتم توجيه كل قسم لمديره تلقائياً، مع تطبيق استثناء خاص بمدير المخازن:
         </p>
+
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 space-y-1 font-bold">
+          <div className="flex items-center gap-2 text-amber-950 font-black text-sm">
+            <i className="fas fa-exclamation-triangle text-amber-600"></i>
+            استثناء إداري خاص بمدير المخازن (أ/ أحمد حمدان):
+          </div>
+          <div>
+            الطلب الخاص بمدير المخازن <span className="font-mono" dir="ltr">ahmed.hamdan@dakahlia.net</span> (كود 70335) يوجه تلقائياً إلى مديره المباشر المعتمد عليه: <span className="font-mono text-blue-900 font-black" dir="ltr">abdelhady.saleh@dakahlia.net</span> (أ/ عبد الهادي صالح - المشرف العام).
+          </div>
+        </div>
+
         <pre className="bg-gray-900 text-green-400 p-4 rounded-xl text-[11px] font-mono overflow-x-auto text-left" dir="ltr">
-{`DEPARTMENTS: {
+{`// استثناء خاص بمدير المخازن:
+WAREHOUSE_DIRECTOR_EXCEPTION: {
+  directorEmail: "ahmed.hamdan@dakahlia.net",
+  managerEmail: "abdelhady.saleh@dakahlia.net", // أ/ عبد الهادي صالح
+  managerName: "أ/ عبد الهادي صالح"
+},
+
+DEPARTMENTS: {
   "التخطيط و المتابعة": { managerEmail: "ahmed.hamdan@dakahlia.net", managerName: "أ/ احمد حمدان" },
-  "إدارة المخازن": { managerEmail: "warehouses.mgmt@dakahlia.net", managerName: "أ/ مصطفى العبد" },
+  "إدارة المخازن": { managerEmail: "ahmed.hamdan@dakahlia.net", managerName: "أ/ احمد حمدان" },
   "الخامات": { managerEmail: "raw.store.mgr@dakahlia.net", managerName: "أ/ احمد كمال" },
   "المنتج التام": { managerEmail: "finished.store@dakahlia.net", managerName: "أ/ محمود غالى" },
   "المخازن العامة": { managerEmail: "general.store@dakahlia.net", managerName: "أ/ رمضان زينهم" },

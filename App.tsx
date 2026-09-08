@@ -4,7 +4,8 @@ import { LeaveForm } from './components/LeaveForm';
 import { StatusBadge } from './components/StatusBadge';
 import { SetupGuide } from './components/SetupGuide';
 import { RequestDetails } from './components/RequestDetails';
-import { submitLeaveRequest, fetchEmployeesFromSheet, getStoredSubmitterEmail, setStoredSubmitterEmail } from './services/gasService';
+import { AccountModal } from './components/AccountModal';
+import { submitLeaveRequest, fetchEmployeesFromSheet, getInitialSubmitterEmail, setStoredSubmitterEmail } from './services/gasService';
 import { LeaveRequest, RequestStatus, Employee } from './types';
 
 const ADMIN_EMAIL = 'sadat.planning.officer@dakahlia.net';
@@ -20,7 +21,10 @@ const App: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isSyncingEmployees, setIsSyncingEmployees] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
-  const [submitterEmail, setSubmitterEmail] = useState<string>(getStoredSubmitterEmail());
+  
+  // قراءة إيميل المستخدم من الرابط ?email=... أو التخزين المحلي بدون فرض إيميل المشرف
+  const [submitterEmail, setSubmitterEmail] = useState<string>(getInitialSubmitterEmail());
+  const [showAccountModal, setShowAccountModal] = useState<boolean>(!getInitialSubmitterEmail());
   const [adminViewAll, setAdminViewAll] = useState(false);
 
   const isAdmin = submitterEmail.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase();
@@ -32,8 +36,9 @@ const App: React.FC = () => {
       if (res.success && res.employees.length > 0) {
         setEmployees(res.employees);
         setLastSyncTime(new Date());
-        if (res.activeUser) {
+        if (res.activeUser && !submitterEmail) {
           setSubmitterEmail(res.activeUser);
+          setStoredSubmitterEmail(res.activeUser);
         }
       }
     } catch (err) {
@@ -41,7 +46,7 @@ const App: React.FC = () => {
     } finally {
       setIsSyncingEmployees(false);
     }
-  }, []);
+  }, [submitterEmail]);
 
   useEffect(() => {
     const saved = localStorage.getItem('leave_requests_warehouse');
@@ -57,8 +62,10 @@ const App: React.FC = () => {
   }, [syncEmployees]);
 
   const handleUpdateSubmitterEmail = (newEmail: string) => {
-    setSubmitterEmail(newEmail);
-    setStoredSubmitterEmail(newEmail);
+    const clean = newEmail.trim().toLowerCase();
+    setSubmitterEmail(clean);
+    setStoredSubmitterEmail(clean);
+    setShowAccountModal(false);
   };
 
   const saveSubmissions = (newSubs: LeaveRequest[]) => {
@@ -67,11 +74,15 @@ const App: React.FC = () => {
   };
 
   const handleSubmit = async (data: any) => {
+    if (!submitterEmail) {
+      setShowAccountModal(true);
+      return;
+    }
     setIsSubmitting(true);
     setMessage(null);
 
     const requestId = 'FHR-W-' + Math.floor(100000 + Math.random() * 900000);
-    const finalData = { ...data, requestId };
+    const finalData = { ...data, requestId, submitterEmail };
 
     const result = await submitLeaveRequest(finalData);
 
@@ -128,10 +139,29 @@ const App: React.FC = () => {
                 <i className="fas fa-database text-[9px]"></i>
                 متصل بشيت: تصريح اجازات (data)
               </span>
-              <span className="bg-amber-100 text-amber-900 text-[11px] px-3 py-1 rounded-full font-bold flex items-center gap-1 border border-amber-200 font-mono" dir="ltr">
-                <i className="fas fa-user text-[9px]"></i>
-                {submitterEmail}
-              </span>
+              {submitterEmail ? (
+                <div className="bg-amber-100 text-amber-950 text-[11px] px-3 py-1 rounded-full font-bold flex items-center gap-2 border border-amber-300 shadow-sm font-mono" dir="ltr">
+                  <i className="fas fa-user-circle text-amber-700 text-xs"></i>
+                  <span>{submitterEmail}</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowAccountModal(true)}
+                    className="font-sans text-[10px] text-blue-700 hover:text-blue-900 underline font-black ml-1"
+                    title="تغيير الحساب المسجل لهذا الجهاز"
+                  >
+                    (تبديل)
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowAccountModal(true)}
+                  className="bg-amber-500 hover:bg-amber-600 text-white text-[11px] px-3 py-1 rounded-full font-bold flex items-center gap-1.5 shadow-sm transition-all animate-pulse"
+                >
+                  <i className="fas fa-sign-in-alt text-[10px]"></i>
+                  تحديد حسابك
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -180,6 +210,7 @@ const App: React.FC = () => {
               lastSyncTime={lastSyncTime}
               submitterEmail={submitterEmail}
               canEditSubmitter={isAdmin}
+              onOpenAccountModal={() => setShowAccountModal(true)}
               onUpdateSubmitterEmail={handleUpdateSubmitterEmail}
               onSubmit={handleSubmit} 
             />
@@ -264,6 +295,15 @@ const App: React.FC = () => {
       </main>
 
       {selectedRequest && <RequestDetails request={selectedRequest} onClose={() => setSelectedRequest(null)} />}
+
+      <AccountModal
+        isOpen={showAccountModal}
+        currentEmail={submitterEmail}
+        employees={employees}
+        canClose={Boolean(submitterEmail)}
+        onClose={() => setShowAccountModal(false)}
+        onSave={(newEmail) => handleUpdateSubmitterEmail(newEmail)}
+      />
     </div>
   );
 };

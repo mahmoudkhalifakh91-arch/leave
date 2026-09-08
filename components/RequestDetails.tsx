@@ -10,19 +10,34 @@ interface RequestDetailsProps {
 const LOCAL_CONFIG_EMAILS: any = {
   DEPARTMENTS: {
     "التخطيط و المتابعة": "ahmed.hamdan@dakahlia.net",
-    "إدارة المخازن": "warehouses.mgmt@dakahlia.net",
+    "إدارة المخازن": "ahmed.hamdan@dakahlia.net",
     "الخامات": "raw.store.mgr@dakahlia.net",
     "المنتج التام": "finished.store@dakahlia.net",
     "قطع الغيار": "spareparts.store@dakahlia.net",
     "المخازن العامة": "general.store@dakahlia.net",
     "حركة المعدات": "equipment.mgr@dakahlia.net"
   },
-  DEPT_HEAD: "sadat.planning.officer@dakahlia.net",
+  WAREHOUSE_DIRECTOR_MANAGER: "abdelhady.saleh@dakahlia.net",
+  DEPT_HEAD: "ahmed.hamdan@dakahlia.net",
   HR: "sadat.planning.officer@dakahlia.net"
 };
 
 export const RequestDetails: React.FC<RequestDetailsProps> = ({ request, onClose }) => {
   const [view, setView] = useState<'doc' | 'workflow'>('doc');
+
+  const isAhmedHamdan = 
+    request.employeeEmail?.toLowerCase() === 'ahmed.hamdan@dakahlia.net' ||
+    request.employeeCode === '70335' ||
+    request.employeeName?.includes('حمدان') ||
+    request.submitterEmail?.toLowerCase() === 'ahmed.hamdan@dakahlia.net';
+
+  const directManagerEmail = isAhmedHamdan 
+    ? LOCAL_CONFIG_EMAILS.WAREHOUSE_DIRECTOR_MANAGER 
+    : (LOCAL_CONFIG_EMAILS.DEPARTMENTS[request.department] || 'مدير القسم');
+
+  const deptHeadEmail = isAhmedHamdan 
+    ? LOCAL_CONFIG_EMAILS.WAREHOUSE_DIRECTOR_MANAGER 
+    : LOCAL_CONFIG_EMAILS.DEPT_HEAD;
 
   const generateISOPrint = () => {
     const printWindow = window.open('', '_blank');
@@ -79,12 +94,12 @@ export const RequestDetails: React.FC<RequestDetailsProps> = ({ request, onClose
                   <td>
                     المدير المباشر<span class="sig-underline"></span>
                     <div class="stamp-text" style="color: #166534; border-color: #166534;">APPROVED</div>
-                    <span class="approver-email">${LOCAL_CONFIG_EMAILS.DEPARTMENTS[request.department] || ''}</span>
+                    <span class="approver-email">${directManagerEmail}</span>
                   </td>
                   <td>
                     مدير الإدارة<span class="sig-underline"></span>
                     <div class="stamp-text" style="color: #166534; border-color: #166534;">APPROVED</div>
-                    <span class="approver-email">${LOCAL_CONFIG_EMAILS.DEPT_HEAD}</span>
+                    <span class="approver-email">${deptHeadEmail}</span>
                   </td>
                   <td>
                     الموارد البشرية<span class="sig-underline"></span>
@@ -229,21 +244,37 @@ export const RequestDetails: React.FC<RequestDetailsProps> = ({ request, onClose
             </div>
           ) : (
             <div className="py-10 text-center">
-               <div className="flex flex-col items-center gap-6">
+               {isAhmedHamdan && (
+                 <div className="mb-6 mx-auto max-w-md p-3.5 bg-amber-50 border border-amber-300 rounded-2xl text-right text-xs text-amber-900 font-bold flex items-center gap-2.5">
+                   <i className="fas fa-star text-amber-500 text-sm"></i>
+                   <span>استثناء إداري لمدير المخازن (أ/ أحمد حمدان): المدير المباشر المعتمد عليه هو أ/ عبد الهادي صالح (abdelhady.saleh@dakahlia.net).</span>
+                 </div>
+               )}
+               <div className="flex flex-col items-center gap-4">
                   <div className="flex items-center gap-4 w-full max-w-md">
-                     <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-bold">1</div>
+                     <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-bold shrink-0">1</div>
                      <div className="flex-1 p-4 bg-green-50 rounded-xl border border-green-100 text-right">
                         <div className="text-xs font-black text-green-700">تم تقديم الطلب</div>
                         <div className="text-[11px] text-green-800 font-bold">للموظف: {request.employeeName}</div>
                         <div className="text-[10px] text-gray-500 font-mono mt-0.5" dir="ltr">منشئ الطلب: {request.submitterEmail || 'Google Account'}</div>
                      </div>
                   </div>
-                  <div className="w-0.5 h-8 bg-gray-200"></div>
+                  <div className="w-0.5 h-6 bg-gray-200"></div>
                   <div className="flex items-center gap-4 w-full max-w-md">
-                     <div className="w-8 h-8 rounded-full bg-yellow-500 text-white flex items-center justify-center text-xs font-bold">2</div>
+                     <div className="w-8 h-8 rounded-full bg-yellow-500 text-white flex items-center justify-center text-xs font-bold shrink-0">2</div>
                      <div className="flex-1 p-4 bg-yellow-50 rounded-xl border border-yellow-100 text-right">
-                        <div className="text-xs font-black text-yellow-700">انتظار موافقة المدير المباشر</div>
-                        <div className="text-[10px] text-yellow-600 font-mono" dir="ltr">الإيميل: {LOCAL_CONFIG_EMAILS.DEPARTMENTS[request.department] || 'مدير القسم'}</div>
+                        <div className="text-xs font-black text-yellow-700">{isAhmedHamdan ? 'اعتماد المشرف العام / المدير المباشر' : 'موافقة المدير المباشر'}</div>
+                        <div className="text-[11px] text-yellow-900 font-bold">{isAhmedHamdan ? 'أ/ عبد الهادي صالح' : (request.department || 'القسم')}</div>
+                        <div className="text-[10px] text-yellow-700 font-mono mt-0.5" dir="ltr">{directManagerEmail}</div>
+                     </div>
+                  </div>
+                  <div className="w-0.5 h-6 bg-gray-200"></div>
+                  <div className="flex items-center gap-4 w-full max-w-md">
+                     <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold shrink-0">3</div>
+                     <div className="flex-1 p-4 bg-blue-50 rounded-xl border border-blue-100 text-right">
+                        <div className="text-xs font-black text-blue-700">الاعتماد والتوثيق النهائي (HR)</div>
+                        <div className="text-[11px] text-blue-900 font-bold">إدارة الموارد البشرية</div>
+                        <div className="text-[10px] text-blue-700 font-mono mt-0.5" dir="ltr">{LOCAL_CONFIG_EMAILS.HR}</div>
                      </div>
                   </div>
                </div>

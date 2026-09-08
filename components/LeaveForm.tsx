@@ -10,6 +10,7 @@ interface LeaveFormProps {
   lastSyncTime?: Date | null;
   submitterEmail?: string;
   canEditSubmitter?: boolean;
+  onOpenAccountModal?: () => void;
   onUpdateSubmitterEmail?: (email: string) => void;
   onSubmit: (data: any) => void;
 }
@@ -20,8 +21,9 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({
   isSyncing = false,
   onRefreshEmployees,
   lastSyncTime,
-  submitterEmail = 'sadat.planning.officer@dakahlia.net',
+  submitterEmail = '',
   canEditSubmitter = false,
+  onOpenAccountModal,
   onUpdateSubmitterEmail,
   onSubmit 
 }) => {
@@ -96,9 +98,15 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!submitterEmail || !submitterEmail.trim()) {
+      if (onOpenAccountModal) {
+        onOpenAccountModal();
+      }
+      return;
+    }
     onSubmit({
       ...formData,
-      submitterEmail: submitterEmail, // حساب Google المنشئ للطلب
+      submitterEmail: submitterEmail.trim(), // حساب Google المنشئ للطلب
       displayIssueDate: formatDateDisplay(formData.issueDate),
       displayStartDate: formatDateDisplay(formData.startDate),
       displayEndDate: formatDateDisplay(formData.endDate)
@@ -177,52 +185,35 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({
               </span>
             </div>
             
-            {isEditingSubmitter && canEditSubmitter ? (
-              <div className="flex items-center gap-2 mt-2">
-                <input
-                  type="email"
-                  value={tempSubmitterEmail}
-                  onChange={(e) => setTempSubmitterEmail(e.target.value)}
-                  className="px-3 py-1.5 rounded-lg border-2 border-amber-400 text-xs font-mono font-bold outline-none bg-white text-gray-800"
-                  placeholder="name@dakahlia.net"
-                />
-                <button
-                  type="button"
-                  onClick={handleSaveSubmitter}
-                  className="px-3 py-1.5 bg-amber-600 text-white text-xs font-bold rounded-lg hover:bg-amber-700"
-                >
-                  حفظ
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsEditingSubmitter(false)}
-                  className="px-2 py-1.5 text-gray-500 text-xs"
-                >
-                  إلغاء
-                </button>
-              </div>
-            ) : (
-              <div className="flex flex-wrap items-center gap-2 mt-1">
-                <span className="font-mono text-sm font-black text-blue-900 bg-white px-3 py-1 rounded-lg border border-amber-200 shadow-sm" dir="ltr">
+            {submitterEmail ? (
+              <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                <span className="font-mono text-sm font-black text-blue-900 bg-white px-3 py-1.5 rounded-xl border border-amber-300 shadow-sm" dir="ltr">
                   {submitterEmail}
                 </span>
-                {canEditSubmitter ? (
+                {onOpenAccountModal && (
                   <button
                     type="button"
-                    onClick={() => setIsEditingSubmitter(true)}
-                    className="text-xs text-amber-700 hover:text-amber-900 underline font-bold mr-2"
+                    onClick={onOpenAccountModal}
+                    className="text-xs text-amber-900 hover:text-blue-900 bg-amber-200/70 hover:bg-amber-200 px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition-all border border-amber-300 shadow-sm"
                   >
-                    تعديل الحساب (صلاحية المسؤول)
+                    <i className="fas fa-sync-alt text-[10px]"></i>
+                    تبديل الحساب
                   </button>
-                ) : (
-                  <span className="text-[11px] text-gray-500 bg-amber-100/60 px-2 py-0.5 rounded font-bold border border-amber-200/60 flex items-center gap-1">
-                    <i className="fas fa-lock text-[10px] text-amber-600"></i>
-                    حساب موثق تلقائياً (غير قابل للتعديل)
-                  </span>
                 )}
               </div>
+            ) : (
+              <div className="mt-2">
+                <button
+                  type="button"
+                  onClick={onOpenAccountModal}
+                  className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md flex items-center gap-2 animate-bounce"
+                >
+                  <i className="fas fa-sign-in-alt"></i>
+                  اضغط هنا لتسجيل حسابك للمتابعة
+                </button>
+              </div>
             )}
-            <p className="text-[11px] text-amber-800 mt-1">
+            <p className="text-[11px] text-amber-800 mt-1.5">
               * هذا الحساب هو المسؤول الذي يقوم بإنشاء الطلب حالياً، وهو منفصل تماماً عن البريد الشخصي للموظف بالأسفل.
             </p>
           </div>
@@ -286,6 +277,13 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({
               </option>
             ))}
           </datalist>
+
+          {(formData.employeeCode === '70335' || formData.employeeName.includes('حمدان') || formData.employeeEmail?.toLowerCase() === 'ahmed.hamdan@dakahlia.net') && (
+            <div className="mt-2.5 p-3 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-950 font-bold flex items-center gap-2 animate-in fade-in duration-200">
+              <i className="fas fa-shield-alt text-amber-600 text-sm"></i>
+              <span>استثناء إداري خاص بمدير المخازن (أ/ أحمد حمدان): سيتم توجيه هذا الطلب للاعتماد المباشر من أ/ عبد الهادي صالح (<strong className="font-mono text-blue-900" dir="ltr">abdelhady.saleh@dakahlia.net</strong>).</span>
+            </div>
+          )}
         </div>
         
         <div>

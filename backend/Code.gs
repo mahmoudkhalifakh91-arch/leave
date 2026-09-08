@@ -41,6 +41,15 @@ const CONFIG = {
     }
   },
 
+  // استثناء إداري خاص بمدير المخازن (المدير الأعلى المعتمد عليه)
+  WAREHOUSE_DIRECTOR_EXCEPTION: {
+    directorEmail: "ahmed.hamdan@dakahlia.net",
+    directorName: "أ/ أحمد حمدان",
+    directorCode: "70335",
+    managerEmail: "abdelhady.saleh@dakahlia.net",
+    managerName: "أ/ عبد الهادي صالح"
+  },
+
   // الجهات الموحدة
   FINAL_APPROVERS: {
     DEPT_HEAD: {
@@ -53,6 +62,26 @@ const CONFIG = {
     }
   }
 };
+
+/**
+ * التحقق مما إذا كان الطلب يخص مدير المخازن (أ/ أحمد حمدان)
+ */
+function isWarehouseDirectorRequest(data) {
+  if (!data) return false;
+  const email = String(data.employeeEmail || data.submitterEmail || '').trim().toLowerCase();
+  const name = String(data.employeeName || '').trim();
+  const code = String(data.employeeCode || '').trim();
+  const title = String(data.jobTitle || '').trim();
+
+  return (
+    email === 'ahmed.hamdan@dakahlia.net' ||
+    code === '70335' ||
+    name.indexOf('حمدان') > -1 ||
+    name.indexOf('احمد حمدان') > -1 ||
+    name.indexOf('أحمد حمدان') > -1 ||
+    (data.department === 'إدارة المخازن' && title.indexOf('مدير') > -1)
+  );
+}
 
 /**
  * دالة مساعدة لتنسيق التاريخ ليظهر dd/mm/yyyy فقط
@@ -98,6 +127,7 @@ function doPost(e) {
     const today = formatSimpleDate(data.issueDate || new Date());
     const startDate = formatSimpleDate(data.startDate);
     const endDate = formatSimpleDate(data.endDate);
+    const submitterEmail = data.submitterEmail || Session.getActiveUser().getEmail() || 'غير محدد';
 
     sheet.appendRow([
       requestId, 
@@ -113,7 +143,8 @@ function doPost(e) {
       'PENDING_MANAGER', 
       data.reason || '', 
       data.employeeEmail || '', 
-      JSON.stringify([])
+      JSON.stringify([]),
+      submitterEmail
     ]);
     
     const empDataForPdf = {
@@ -126,11 +157,22 @@ function doPost(e) {
       startDate: startDate,
       endDate: endDate,
       reason: String(data.reason || 'لا يوجد'),
-      today: today
+      today: today,
+      submitterEmail: submitterEmail
     };
 
+    const isDirector = isWarehouseDirectorRequest(data);
+    let targetManagerEmail = deptInfo.managerEmail;
+    let targetRole = 'المدير المباشر';
+
+    // تطبيق استثناء مدير المخازن (أ/ أحمد حمدان يتبع أ/ عبد الهادي صالح)
+    if (isDirector) {
+      targetManagerEmail = CONFIG.WAREHOUSE_DIRECTOR_EXCEPTION.managerEmail;
+      targetRole = 'المدير العام (المشرف على مدير المخازن)';
+    }
+
     let pdf = generateFinalPDF(requestId, empDataForPdf, []);
-    sendApprovalMail(deptInfo.managerEmail, 'المدير المباشر', requestId, empDataForPdf, pdf);
+    sendApprovalMail(targetManagerEmail, targetRole, requestId, empDataForPdf, pdf);
     
     return ContentService.createTextOutput(JSON.stringify({ success: true, requestId: requestId }))
       .setMimeType(ContentService.MimeType.JSON);
@@ -143,9 +185,18 @@ function doPost(e) {
 }
 
 function doGet(e) {
-  const id = e.parameter.id;
-  const action = e.parameter.action;
-  const role = e.parameter.role;
+  // فحص استعلام المستخدم النشط أو مزامنة الموظفين
+  if (e && e.parameter && e.parameter.action === 'getActiveUser') {
+    const activeUser = Session.getActiveUser().getEmail() || Session.getEffectiveUser().getEmail();
+    return ContentService.createTextOutput(JSON.stringify({
+      success: true,
+      email: activeUser
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const id = e && e.parameter ? e.parameter.id : null;
+  const action = e && e.parameter ? e.parameter.action : null;
+  const role = e && e.parameter ? e.parameter.role : null;
   try {
     const result = handleWorkflowStep(id, action, role);
     const color = action === 'approve' ? '#166534' : '#991b1b';
@@ -188,33 +239,59 @@ function handleWorkflowStep(id, action, role) {
     endDate: formatSimpleDate(rowData[8]),
     daysCount: String(rowData[9]),
     reason: String(rowData[11]),
-    employeeEmail: String(rowData[12])
+    employeeEmail: String(rowData[12]),
+    submitterEmail: String(rowData[14] || '')
   };
   
   let signatures = JSON.parse(rowData[13] || '[]');
+  const isDirector = isWarehouseDirectorRequest(empData);
 
   if (action === 'reject') {
     sheet.getRange(rowIndex, 11).setValue('REJECTED');
     return { message: "تم رفض الطلب بنجاح." };
   }
 
-  if (role === 'المدير المباشر' && signatures.indexOf('MANAGER') === -1) {
-    signatures.push('MANAGER');
-    sheet.getRange(rowIndex, 11).setValue('PENDING_DEPT_HEAD');
-    sheet.getRange(rowIndex, 14).setValue(JSON.stringify(signatures));
-    let pdf = generateFinalPDF(id, empData, signatures);
-    sendApprovalMail(CONFIG.FINAL_APPROVERS.DEPT_HEAD.email, 'مدير الإدارة', id, empData, pdf);
-    return { message: "تم اعتماد المدير المباشر بنجاح." };
-  } 
-  else if (role === 'مدير الإدارة' && signatures.indexOf('DEPT_HEAD') === -1) {
-    signatures.push('DEPT_HEAD');
-    sheet.getRange(rowIndex, 11).setValue('PENDING_HR');
-    sheet.getRange(rowIndex, 14).setValue(JSON.stringify(signatures));
-    let pdf = generateFinalPDF(id, empData, signatures);
-    sendApprovalMail(CONFIG.FINAL_APPROVERS.HR.email, 'الموارد البشرية', id, empData, pdf);
-    return { message: "تم اعتماد مدير الإدارة بنجاح." };
+  // معالجة استثناء طلب مدير المخازن (أ/ أحمد حمدان)
+  if (isDirector) {
+    if (signatures.indexOf('MANAGER') === -1) {
+      signatures.push('MANAGER');
+      signatures.push('DEPT_HEAD'); // اعتماد أ/ عبد الهادي صالح يمثل اعتماد المدير المباشر والإدارة لمدير المخازن
+      sheet.getRange(rowIndex, 11).setValue('PENDING_HR');
+      sheet.getRange(rowIndex, 14).setValue(JSON.stringify(signatures));
+      let pdf = generateFinalPDF(id, empData, signatures);
+      sendApprovalMail(CONFIG.FINAL_APPROVERS.HR.email, 'الموارد البشرية', id, empData, pdf);
+      return { message: "تم اعتماد إجازة مدير المخازن بنجاح من أ/ عبد الهادي صالح وإحالتها للموارد البشرية." };
+    }
+  } else {
+    // التدفق العادي للأقسام
+    if (role === 'المدير المباشر' && signatures.indexOf('MANAGER') === -1) {
+      signatures.push('MANAGER');
+      signatures.push('MANAGER_APPROVED');
+      sheet.getRange(rowIndex, 11).setValue('PENDING_DEPT_HEAD');
+      sheet.getRange(rowIndex, 14).setValue(JSON.stringify(signatures));
+      let pdf = generateFinalPDF(id, empData, signatures);
+      
+      const directMgr = CONFIG.DEPARTMENTS[empData.department]?.managerEmail;
+      // إذا كان المدير المباشر هو نفسه مدير المخازن (أحمد حمدان)، يوجه للمدير الأعلى عليه (أ/ عبد الهادي صالح)
+      if (directMgr === CONFIG.FINAL_APPROVERS.DEPT_HEAD.email) {
+        sendApprovalMail(CONFIG.WAREHOUSE_DIRECTOR_EXCEPTION.managerEmail, 'مدير الإدارة (المشرف العام)', id, empData, pdf);
+      } else {
+        sendApprovalMail(CONFIG.FINAL_APPROVERS.DEPT_HEAD.email, 'مدير الإدارة', id, empData, pdf);
+      }
+      return { message: "تم اعتماد المدير المباشر بنجاح." };
+    } 
+    else if ((role === 'مدير الإدارة' || role === 'مدير الإدارة (المشرف العام)') && signatures.indexOf('DEPT_HEAD') === -1) {
+      signatures.push('DEPT_HEAD');
+      sheet.getRange(rowIndex, 11).setValue('PENDING_HR');
+      sheet.getRange(rowIndex, 14).setValue(JSON.stringify(signatures));
+      let pdf = generateFinalPDF(id, empData, signatures);
+      sendApprovalMail(CONFIG.FINAL_APPROVERS.HR.email, 'الموارد البشرية', id, empData, pdf);
+      return { message: "تم اعتماد مدير الإدارة بنجاح." };
+    }
   }
-  else if (role === 'الموارد البشرية' && signatures.indexOf('HR') === -1) {
+
+  // مرحلة اعتماد الموارد البشرية النهائية
+  if (role === 'الموارد البشرية' && signatures.indexOf('HR') === -1) {
     signatures.push('HR');
     sheet.getRange(rowIndex, 11).setValue('APPROVED');
     sheet.getRange(rowIndex, 14).setValue(JSON.stringify(signatures));
@@ -224,7 +301,7 @@ function handleWorkflowStep(id, action, role) {
         attachments: [pdf]
       });
     }
-    return { message: "تم الاعتماد النهائي." };
+    return { message: "تم الاعتماد النهائي للإجازة." };
   }
   return { message: "الإجراء تم مسبقاً." };
 }
@@ -241,18 +318,28 @@ function generateFinalPDF(id, data, signatures) {
 
 function sendApprovalMail(targetEmail, role, id, data, pdfBlob) {
   const baseUrl = ScriptApp.getService().getUrl();
-  const approveUrl = `${baseUrl}?id=${id}&action=approve&role=${role}`;
-  const rejectUrl = `${baseUrl}?id=${id}&action=reject&role=${role}`;
+  const approveUrl = `${baseUrl}?id=${id}&action=approve&role=${encodeURIComponent(role)}`;
+  const rejectUrl = `${baseUrl}?id=${id}&action=reject&role=${encodeURIComponent(role)}`;
   
+  const isDirector = isWarehouseDirectorRequest(data);
+  const exceptionNotice = isDirector ? `
+    <div style="background-color: #fef3c7; border: 1px solid #f59e0b; padding: 10px 15px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; color: #92400e;">
+      ⭐ استثناء إداري: هذا الطلب يخص أ/ أحمد حمدان (مدير المخازن) وموجه لسيادتكم للاعتماد بصفتكم المدير المباشر عليه.
+    </div>
+  ` : '';
+
   const htmlBody = `
     <div dir="rtl" style="font-family: Arial, sans-serif; border: 1px solid #e5e7eb; padding: 25px; border-radius: 15px; max-width: 600px; margin: auto;">
       <h2 style="color: #1e3a8a; border-bottom: 2px solid #f59e0b; padding-bottom: 10px;">طلب إجازة للمراجعة - ${role}</h2>
+      ${exceptionNotice}
       <p>عزيزي <b>المسؤول</b>،</p>
       <p>يرجى مراجعة طلب الإجازة المقدم من الموظف التالي:</p>
       <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
         <tr><td style="padding: 5px; color: #666;">اسم الموظف:</td><td style="font-weight: bold;">${data.employeeName}</td></tr>
+        <tr><td style="padding: 5px; color: #666;">الوظيفة والقسم:</td><td style="font-weight: bold;">${data.jobTitle} - ${data.department}</td></tr>
         <tr><td style="padding: 5px; color: #666;">نوع الإجازة:</td><td style="color: #f59e0b; font-weight: bold;">${data.leaveType}</td></tr>
-        <tr><td style="padding: 5px; color: #666;">التاريخ:</td><td style="font-weight: bold;">من ${data.startDate} إلى ${data.endDate}</td></tr>
+        <tr><td style="padding: 5px; color: #666;">التاريخ:</td><td style="font-weight: bold;">من ${data.startDate} إلى ${data.endDate} (${data.daysCount} أيام)</td></tr>
+        <tr><td style="padding: 5px; color: #666;">حساب منشئ الطلب:</td><td style="font-family: monospace; font-weight: bold; color: #1e3a8a;" dir="ltr">${data.submitterEmail || 'غير محدد'}</td></tr>
       </table>
       <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center;">
         <a href="${approveUrl}" style="background: #166534; color: white; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-left: 10px;">اعتماد الطلب</a>

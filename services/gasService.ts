@@ -31,18 +31,61 @@ const INITIAL_SHEET_SEED: Employee[] = [
 ];
 
 /**
- * الحصول على البريد الإلكتروني المحفوظ لحساب Google المفتوح (مقدم الطلب)
+ * الحصول على البريد الإلكتروني لحساب Google المفتوح (مقدم الطلب)
+ * يبحث أولاً في معاملات الرابط (URL parameters) ثم في الذاكرة المحلية (localStorage)
+ * ولا يتم تثبيت بريد المشرف كافتراضي حتى يظهر لكل مستخدم حسابه الخاص
+ */
+export const getInitialSubmitterEmail = (): string => {
+  // 1. فحص معاملات الرابط (مثل: ?email=name@dakahlia.net أو ?user=...)
+  if (typeof window !== 'undefined' && window.location) {
+    const params = new URLSearchParams(window.location.search);
+    const urlEmail = params.get('email') || params.get('u') || params.get('user');
+    if (urlEmail && urlEmail.trim()) {
+      const clean = urlEmail.trim().toLowerCase();
+      localStorage.setItem('active_google_user_email', clean);
+      return clean;
+    }
+  }
+
+  // 2. فحص التخزين المحلي لهذا الجهاز/المتصفح
+  if (typeof localStorage !== 'undefined') {
+    const saved = localStorage.getItem('active_google_user_email');
+    if (saved && saved.trim()) {
+      return saved.trim().toLowerCase();
+    }
+  }
+
+  // إذا لم يتم العثور على أي بريد سابق، نرجعه فارغاً ليقوم المستخدم بإدخال حسابه
+  return '';
+};
+
+/**
+ * دالة متوافقة مع الاستدعاءات القديمة
  */
 export const getStoredSubmitterEmail = (): string => {
-  const saved = localStorage.getItem('active_google_user_email');
-  return saved || 'sadat.planning.officer@dakahlia.net';
+  return getInitialSubmitterEmail();
 };
 
 /**
  * تحديث البريد الإلكتروني لحساب Google المفتوح (مقدم الطلب)
  */
 export const setStoredSubmitterEmail = (email: string) => {
-  localStorage.setItem('active_google_user_email', email);
+  if (typeof localStorage !== 'undefined') {
+    if (email && email.trim()) {
+      localStorage.setItem('active_google_user_email', email.trim().toLowerCase());
+    } else {
+      localStorage.removeItem('active_google_user_email');
+    }
+  }
+};
+
+/**
+ * تسجيل الخروج / مسح الحساب المحفوظ
+ */
+export const clearStoredSubmitterEmail = () => {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem('active_google_user_email');
+  }
 };
 
 /**
