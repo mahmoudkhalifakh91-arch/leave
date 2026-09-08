@@ -9,6 +9,7 @@ interface LeaveFormProps {
   onRefreshEmployees?: () => Promise<void>;
   lastSyncTime?: Date | null;
   submitterEmail?: string;
+  onOpenAccountModal?: () => void;
   onSubmit: (data: any) => void;
 }
 
@@ -19,6 +20,7 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({
   onRefreshEmployees,
   lastSyncTime,
   submitterEmail = '',
+  onOpenAccountModal,
   onSubmit 
 }) => {
   const getTodayStr = () => {
@@ -103,8 +105,55 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({
     Number(formData.daysCount) > formData.annualBalance && 
     Boolean(formData.employeeCode);
 
+  const hasEmail = Boolean(submitterEmail && submitterEmail.trim());
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in duration-700">
+    <form 
+      onSubmit={handleSubmit} 
+      className="space-y-8 animate-in fade-in duration-700 relative"
+      onClick={() => {
+        if (!hasEmail && onOpenAccountModal) {
+          onOpenAccountModal();
+        }
+      }}
+    >
+      {/* تنبيه إجباري إذا لم يتم اختيار البريد بعد */}
+      {!hasEmail && (
+        <div 
+          onClick={onOpenAccountModal}
+          className="cursor-pointer bg-gradient-to-r from-amber-600 via-amber-500 to-orange-600 text-white p-5 rounded-3xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 transition-all hover:shadow-2xl border-2 border-amber-400/50"
+        >
+          <div className="flex items-center gap-3.5 text-right">
+            <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-white text-2xl flex-shrink-0 backdrop-blur-sm">
+              <i className="fas fa-lock text-yellow-200"></i>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-black text-base sm:text-lg">النموذج مقفل: تحديد البريد الإلكتروني إجباري</span>
+                <span className="bg-white/20 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                  إجراء أولي
+                </span>
+              </div>
+              <p className="text-xs text-amber-100 mt-1">
+                لا يمكنك تعبئة أو إدخال أي حقل في النموذج قبل تسجيل حسابك لتوثيق وتتبع طلبك في الشيت.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenAccountModal?.();
+            }}
+            className="w-full sm:w-auto px-6 py-3.5 bg-white text-amber-950 rounded-2xl text-xs sm:text-sm font-black shadow-lg hover:bg-amber-50 active:scale-95 transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+          >
+            <i className="fas fa-key text-amber-600"></i>
+            <span>تحديد البريد لفتح النموذج</span>
+          </button>
+        </div>
+      )}
+
       {/* شريط المزامنة مع شيت Google المباشر */}
       <div className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white p-5 rounded-3xl shadow-lg border border-blue-800 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -145,33 +194,69 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({
         </div>
       </div>
 
-      {/* شريط تسجيل حساب Google تلقائياً من المتصفح (نظام Google Forms تماماً بدون اختيار أو نوافذ يدوية) */}
-      <div className="p-4 bg-slate-50 border border-slate-200/90 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+      {/* شريط حساب Google */}
+      <div className={`p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm border transition-all ${
+        hasEmail 
+          ? 'bg-slate-50 border-slate-200/90' 
+          : 'bg-amber-50/70 border-amber-300'
+      }`}>
         <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
-            <i className="fab fa-google text-lg"></i>
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm text-white ${
+            hasEmail ? 'bg-blue-600' : 'bg-amber-500'
+          }`}>
+            <i className={`fab fa-google text-lg`}></i>
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-black text-gray-900">تسجيل حساب Google تلقائياً (مثل Google Forms):</span>
-              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-emerald-200">
-                تسجيل تلقائي
-              </span>
+              <span className="text-xs font-black text-gray-900">حساب مقدم الطلب (توثيق المعاملة):</span>
+              {hasEmail ? (
+                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-emerald-200">
+                  تم التحديد بنجاح
+                </span>
+              ) : (
+                <span className="bg-red-100 text-red-800 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-red-200 animate-pulse">
+                  مطلوب إجبارياً
+                </span>
+              )}
             </div>
             <p className="text-xs text-gray-600 mt-0.5">
-              {submitterEmail ? (
-                <>الحساب المفتوح في المتصفح حالياً: <strong className="font-mono text-blue-900 font-bold" dir="ltr">{submitterEmail}</strong> (يُسجل تلقائياً باسم منشئ الطلب)</>
+              {hasEmail ? (
+                <>الحساب المعتمد لهذا الطلب: <strong className="font-mono text-blue-900 font-bold" dir="ltr">{submitterEmail}</strong> (يُسجل باسم منشئ الطلب)</>
               ) : (
-                <>يتم تسجيل البريد الإلكتروني المرتبط بجلسة Google المفتوحة في المتصفح تلقائياً عند إرسال الطلب</>
+                <span className="text-amber-800 font-bold">لم يتم تحديد البريد الإلكتروني بعد، يرجى الضغط على الزر لتحديده وفتح النموذج.</span>
               )}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 px-3.5 py-1.5 rounded-xl border border-emerald-200 font-bold self-stretch sm:self-auto justify-center">
-          <i className="fas fa-check-circle text-emerald-600"></i>
-          <span>التقاط تلقائي من المتصفح</span>
+        <div className="flex items-center gap-3 self-stretch sm:self-auto justify-between sm:justify-end">
+          {onOpenAccountModal && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenAccountModal();
+              }}
+              className={`text-xs px-3.5 py-2 rounded-xl font-black shadow-sm transition-all flex items-center gap-1.5 ${
+                hasEmail
+                  ? 'text-blue-700 hover:text-blue-900 bg-white hover:bg-blue-50 border border-blue-200'
+                  : 'text-white bg-amber-600 hover:bg-amber-700 active:scale-95 shadow-md'
+              }`}
+            >
+              <i className="fas fa-user-circle text-xs"></i>
+              <span>{hasEmail ? 'تبديل الحساب' : 'تحديد البريد الإلكتروني الآن'}</span>
+            </button>
+          )}
+          {hasEmail && (
+            <div className="flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 font-bold">
+              <i className="fas fa-check-circle text-emerald-600"></i>
+              <span>مفعل</span>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* حقول النموذج - يتم تعطيلها بالكامل إذا لم يتم اختيار البريد الإلكتروني */}
+      <fieldset disabled={!hasEmail} className={`space-y-8 transition-all ${!hasEmail ? 'opacity-40 cursor-not-allowed pointer-events-none select-none' : ''}`}>
 
       {/* حقل تاريخ التحرير يدوياً */}
       <div className="p-6 bg-blue-50/20 rounded-3xl border-2 border-blue-100/50">
@@ -324,13 +409,18 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({
       <div className="pt-6">
         <button 
           type="submit" 
-          disabled={isLoading}
-          className="group w-full py-5 bg-[#1e3a8a] text-white rounded-[1.5rem] font-black text-xl shadow-2xl shadow-blue-900/20 hover:bg-blue-900 hover:scale-[1.01] transition-all flex items-center justify-center gap-4 active:scale-[0.98] disabled:bg-gray-400 disabled:scale-100"
+          disabled={isLoading || !hasEmail}
+          className="group w-full py-5 bg-[#1e3a8a] text-white rounded-[1.5rem] font-black text-xl shadow-2xl shadow-blue-900/20 hover:bg-blue-900 hover:scale-[1.01] transition-all flex items-center justify-center gap-4 active:scale-[0.98] disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed disabled:scale-100"
         >
           {isLoading ? (
             <>
               <i className="fas fa-circle-notch fa-spin"></i>
               <span>جاري معالجة الطلب وإرسال إشعار للمدير...</span>
+            </>
+          ) : !hasEmail ? (
+            <>
+              <i className="fas fa-lock"></i>
+              <span>النموذج مقفل: يجب تحديد البريد الإلكتروني أولاً</span>
             </>
           ) : (
             <>
@@ -340,6 +430,7 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({
           )}
         </button>
       </div>
+      </fieldset>
     </form>
   );
 };

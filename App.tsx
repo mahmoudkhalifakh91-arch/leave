@@ -4,6 +4,7 @@ import { LeaveForm } from './components/LeaveForm';
 import { StatusBadge } from './components/StatusBadge';
 import { SetupGuide } from './components/SetupGuide';
 import { RequestDetails } from './components/RequestDetails';
+import { AccountModal } from './components/AccountModal';
 import { submitLeaveRequest, fetchEmployeesFromSheet, getInitialSubmitterEmail, setStoredSubmitterEmail, detectActiveGoogleUser } from './services/gasService';
 import { LeaveRequest, RequestStatus, Employee } from './types';
 
@@ -22,10 +23,25 @@ const App: React.FC = () => {
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   
   // قراءة إيميل حساب Google النشط في المتصفح تلقائياً (مثل Google Forms)
-  const [submitterEmail, setSubmitterEmail] = useState<string>(getInitialSubmitterEmail());
+  const initialEmail = getInitialSubmitterEmail();
+  const [submitterEmail, setSubmitterEmail] = useState<string>(initialEmail);
+  const [showAccountModal, setShowAccountModal] = useState<boolean>(!initialEmail);
   const [adminViewAll, setAdminViewAll] = useState(false);
 
   const isAdmin = submitterEmail.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
+  const handleUpdateSubmitterEmail = (newEmail: string) => {
+    const clean = newEmail.trim().toLowerCase();
+    setSubmitterEmail(clean);
+    setStoredSubmitterEmail(clean);
+    setShowAccountModal(false);
+  };
+
+  const handleClearSubmitterEmail = () => {
+    setSubmitterEmail('');
+    setStoredSubmitterEmail('');
+    setShowAccountModal(false);
+  };
 
   const syncEmployees = useCallback(async () => {
     setIsSyncingEmployees(true);
@@ -34,7 +50,7 @@ const App: React.FC = () => {
       if (res.success && res.employees.length > 0) {
         setEmployees(res.employees);
         setLastSyncTime(new Date());
-        if (res.activeUser && !submitterEmail) {
+        if (res.activeUser && res.activeUser !== ADMIN_EMAIL && !submitterEmail) {
           setSubmitterEmail(res.activeUser);
           setStoredSubmitterEmail(res.activeUser);
         }
@@ -72,6 +88,12 @@ const App: React.FC = () => {
   };
 
   const handleSubmit = async (data: any) => {
+    if (!submitterEmail || !submitterEmail.trim()) {
+      setShowAccountModal(true);
+      setMessage({ type: 'error', text: 'اختيار وتأكيد البريد الإلكتروني إجباري لمتابعة إرسال الطلب.' });
+      return;
+    }
+
     setIsSubmitting(true);
     setMessage(null);
 
@@ -137,12 +159,26 @@ const App: React.FC = () => {
                 <div className="bg-slate-100 text-slate-800 text-[11px] px-3.5 py-1.5 rounded-full font-bold flex items-center gap-2 border border-slate-200 shadow-sm font-mono" dir="ltr">
                   <i className="fab fa-google text-blue-600 text-xs"></i>
                   <span>{submitterEmail}</span>
-                  <span className="bg-emerald-100 text-emerald-800 text-[9px] px-1.5 py-0.5 rounded font-sans font-bold">تلقائي</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowAccountModal(true)}
+                    className="font-sans text-[10px] text-blue-700 hover:text-blue-900 underline font-black ml-1"
+                    title="تبديل الحساب مثل Google Forms"
+                  >
+                    (تبديل)
+                  </button>
                 </div>
               ) : (
                 <div className="bg-slate-100 text-slate-600 text-[11px] px-3.5 py-1.5 rounded-full font-bold flex items-center gap-2 border border-slate-200 shadow-sm">
                   <i className="fab fa-google text-blue-500 text-xs"></i>
-                  <span>تسجيل تلقائي بحساب Google المفتوح في المتصفح</span>
+                  <span>تسجيل بحساب Google</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowAccountModal(true)}
+                    className="font-sans text-[10px] text-blue-700 hover:text-blue-900 underline font-black mr-1"
+                  >
+                    (تحديد أو تبديل)
+                  </button>
                 </div>
               )}
             </div>
@@ -192,6 +228,7 @@ const App: React.FC = () => {
               onRefreshEmployees={syncEmployees}
               lastSyncTime={lastSyncTime}
               submitterEmail={submitterEmail}
+              onOpenAccountModal={() => setShowAccountModal(true)}
               onSubmit={handleSubmit} 
             />
           )}
@@ -275,6 +312,20 @@ const App: React.FC = () => {
       </main>
 
       {selectedRequest && <RequestDetails request={selectedRequest} onClose={() => setSelectedRequest(null)} />}
+
+      <AccountModal
+        isOpen={showAccountModal}
+        currentEmail={submitterEmail}
+        employees={employees}
+        canClose={Boolean(submitterEmail)}
+        onClose={() => {
+          if (submitterEmail) {
+            setShowAccountModal(false);
+          }
+        }}
+        onSave={handleUpdateSubmitterEmail}
+        onClear={handleClearSubmitterEmail}
+      />
     </div>
   );
 };

@@ -4,7 +4,7 @@ import { LeaveRequest, Employee } from '../types';
 /**
  * إعدادات الاتصال بـ Google Apps Script و Google Sheets
  */
-export const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyehFfrNvRmKWtivpKJv7CtsGfMh3gdpE70xhhqyzPBGHGAQWv7AbU7fcgq2mtqgg6scA/exec';
+export const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbzmw_mqb5qFlRb7eWmhKi9DQm5UnFMUe7mi1jKi30aIS9D9MhOogxJI_4_3-bllC7AeHg/exec';
 export const SPREADSHEET_ID = '1n2sp5TNNGL3M5_LRNJ7IMLXXWoH6-kL8r4eGZokISCs';
 export const SHEET_DATA_TAB = 'data';
 
@@ -35,7 +35,7 @@ const INITIAL_SHEET_SEED: Employee[] = [
  * يقرأ الحساب التلقائي من رابط الجلسة أو الذاكرة المحلية دون إجبار المستخدم على الاختيار اليدوي
  */
 export const getInitialSubmitterEmail = (): string => {
-  // 1. فحص معاملات الرابط (مثل: ?email=name@dakahlia.net أو ?user=...)
+  // 1. فحص معاملات الرابط الصريحة أولاً (مثل: ?email=name@dakahlia.net أو ?user=...)
   if (typeof window !== 'undefined' && window.location) {
     const params = new URLSearchParams(window.location.search);
     const urlEmail = params.get('email') || params.get('u') || params.get('user');
@@ -50,7 +50,13 @@ export const getInitialSubmitterEmail = (): string => {
   if (typeof localStorage !== 'undefined') {
     const saved = localStorage.getItem('active_google_user_email');
     if (saved && saved.trim()) {
-      return saved.trim().toLowerCase();
+      const clean = saved.trim().toLowerCase();
+      // تنظيف فوري: مسح بريد المشرف إذا كان محفوظاً بالخطأ كافتراضي حتى لا يظهر لمن يتصفح من حساب آخر
+      if (clean === 'sadat.planning.officer@dakahlia.net') {
+        localStorage.removeItem('active_google_user_email');
+        return '';
+      }
+      return clean;
     }
   }
 
@@ -77,8 +83,11 @@ export const detectActiveGoogleUser = async (): Promise<string> => {
       const data = await res.json();
       if (data && data.email && data.email.includes('@')) {
         const clean = data.email.trim().toLowerCase();
-        setStoredSubmitterEmail(clean);
-        return clean;
+        // حماية: لا نقوم بتثبيت بريد المشرف تلقائياً كحساب متصفح
+        if (clean !== 'sadat.planning.officer@dakahlia.net') {
+          setStoredSubmitterEmail(clean);
+          return clean;
+        }
       }
     }
   } catch (e) {
@@ -140,7 +149,7 @@ export const fetchEmployeesFromSheet = async (): Promise<{
       if (result.success && Array.isArray(result.employees) && result.employees.length > 0) {
         localStorage.setItem('synced_employees_data', JSON.stringify(result.employees));
         localStorage.setItem('synced_employees_timestamp', new Date().toISOString());
-        if (result.activeUser) {
+        if (result.activeUser && result.activeUser !== 'sadat.planning.officer@dakahlia.net') {
           setStoredSubmitterEmail(result.activeUser);
         }
         return {

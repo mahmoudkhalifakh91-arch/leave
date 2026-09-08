@@ -133,12 +133,8 @@ function doPost(e) {
     try {
       browserEmail = Session.getActiveUser().getEmail();
     } catch (e) {}
-    if (!browserEmail && typeof Session.getEffectiveUser === 'function') {
-      try {
-        browserEmail = Session.getEffectiveUser().getEmail();
-      } catch (e) {}
-    }
-    const submitterEmail = browserEmail || data.submitterEmail || 'مسجل بحساب Google';
+    // تنبيه حاسم: لا نستخدم مطلقاً Session.getEffectiveUser() لأنها ترجع إيميل المطور/المشرف لكل الزائرين
+    const submitterEmail = browserEmail || data.submitterEmail || '';
 
     sheet.appendRow([
       requestId, 
@@ -198,10 +194,14 @@ function doPost(e) {
 function doGet(e) {
   // فحص استعلام المستخدم النشط أو مزامنة الموظفين
   if (e && e.parameter && e.parameter.action === 'getActiveUser') {
-    const activeUser = Session.getActiveUser().getEmail() || Session.getEffectiveUser().getEmail();
+    var activeEmail = '';
+    try {
+      activeEmail = Session.getActiveUser().getEmail();
+    } catch (e) {}
+    // لا نضع إيميل المشرف/الناشر مطلقاً كبديل
     return ContentService.createTextOutput(JSON.stringify({
       success: true,
-      email: activeUser
+      email: activeEmail || ''
     })).setMimeType(ContentService.MimeType.JSON);
   }
 

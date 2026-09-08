@@ -6,6 +6,7 @@ interface AccountModalProps {
   currentEmail: string;
   employees: Employee[];
   onSave: (email: string) => void;
+  onClear?: () => void;
   onClose?: () => void;
   canClose?: boolean;
 }
@@ -15,6 +16,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   currentEmail,
   employees,
   onSave,
+  onClear,
   onClose,
   canClose = true
 }) => {
@@ -48,10 +50,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
     const emp = employees.find(em => em.code === code);
     if (emp) {
-      // اقتراح بريد افتراضي يعتمد على الاسم بالإنجليزية أو كود الموظف
-      if (!emailInput) {
-        setEmailInput(`emp.${emp.code}@dakahlia.net`);
-      }
+      setEmailInput(`emp.${emp.code}@dakahlia.net`);
+      setError('');
     }
   };
 
@@ -69,15 +69,33 @@ export const AccountModal: React.FC<AccountModalProps> = ({
             </button>
           )}
           <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mb-3 border border-white/20">
-            <i className="fas fa-user-circle text-2xl text-yellow-400"></i>
+            <i className="fas fa-user-lock text-2xl text-yellow-400"></i>
           </div>
-          <h3 className="text-xl font-black">تحديد حساب Google المفتوح</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-xl font-black">
+              {canClose ? 'تبديل أو تحديد حساب البريد' : 'تسجيل البريد الإلكتروني (إجباري)'}
+            </h3>
+            {!canClose && (
+              <span className="bg-amber-400 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                مطلوب للمتابعة
+              </span>
+            )}
+          </div>
           <p className="text-xs text-blue-100 mt-1">
-            يرجى إدخال الحساب الذي فتحت منه الرابط لتوثيق معاملاتك وإظهار طلباتك الخاصة بك فقط.
+            {!canClose 
+              ? 'مطلوب إدخال أو تحديد البريد الإلكتروني لفتح نموذج الإجازات وتوثيق طلبك في الشيت باسمك.'
+              : 'يرجى إدخال الحساب الذي فتحت منه الرابط لتوثيق معاملاتك وإظهار طلباتك الخاصة بك فقط.'}
           </p>
         </div>
 
         <form onSubmit={handleConfirm} className="p-6 md:p-8 space-y-6 text-right">
+          {!canClose && (
+            <div className="p-3.5 bg-amber-50 border-r-4 border-amber-500 rounded-xl text-xs text-amber-900 font-bold flex items-center gap-2.5">
+              <i className="fas fa-exclamation-triangle text-amber-600 text-base flex-shrink-0"></i>
+              <span>لا يمكن تعبئة أو إرسال أي بيانات في نموذج الإجازات قبل تحديد وتأكيد البريد الإلكتروني.</span>
+            </div>
+          )}
+
           {error && (
             <div className="p-3 bg-red-50 border-r-4 border-red-500 rounded-xl text-xs text-red-700 font-bold">
               {error}
@@ -139,19 +157,29 @@ export const AccountModal: React.FC<AccountModalProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center gap-3 pt-2">
+          <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
             <button
               type="submit"
-              className="flex-1 py-3.5 bg-[#1e3a8a] text-white font-bold rounded-2xl hover:bg-blue-900 transition-all shadow-lg hover:shadow-xl text-sm"
+              className="w-full sm:flex-1 py-3.5 bg-[#1e3a8a] text-white font-bold rounded-2xl hover:bg-blue-900 transition-all shadow-lg hover:shadow-xl text-sm"
             >
               <i className="fas fa-check-circle ml-2"></i>
               تأكيد الحساب ومتابعة
             </button>
+            {canClose && onClear && currentEmail && (
+              <button
+                type="button"
+                onClick={onClear}
+                className="w-full sm:w-auto px-4 py-3.5 bg-red-50 text-red-700 hover:bg-red-100 font-bold rounded-2xl transition-all text-xs border border-red-200"
+                title="مسح الحساب المسجل"
+              >
+                مسح الحساب
+              </button>
+            )}
             {canClose && onClose && (
               <button
                 type="button"
                 onClick={onClose}
-                className="px-5 py-3.5 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition-all text-sm"
+                className="w-full sm:w-auto px-5 py-3.5 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition-all text-sm"
               >
                 إلغاء
               </button>
