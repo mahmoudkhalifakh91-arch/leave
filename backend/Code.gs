@@ -304,16 +304,16 @@ function handleWorkflowStep(id, action, role) {
   // مرحلة اعتماد الموارد البشرية النهائية
   if (role === 'الموارد البشرية' && signatures.indexOf('HR') === -1) {
     signatures.push('HR');
-    signatures.push('APPROVED&FILED');
-    sheet.getRange(rowIndex, 11).setValue('APPROVED&FILED');
+    signatures.push('APPROVED');
+    sheet.getRange(rowIndex, 11).setValue('APPROVED');
     sheet.getRange(rowIndex, 14).setValue(JSON.stringify(signatures));
     let pdf = generateFinalPDF(id, empData, signatures);
     if (empData.employeeEmail) {
-      GmailApp.sendEmail(empData.employeeEmail, `✅ تم اعتماد إجازتك - رقم ${id}`, `تم اعتماد وتوثيق طلبك بالكامل (APPROVED&FILED).`, {
+      GmailApp.sendEmail(empData.employeeEmail, `✅ تم اعتماد إجازتك - رقم ${id}`, `تم اعتماد وتوثيق طلبك بالكامل (APPROVED).`, {
         attachments: [pdf]
       });
     }
-    return { message: "تم الاعتماد النهائي للإجازة وتوثيقها (APPROVED&FILED)." };
+    return { message: "تم الاعتماد النهائي للإجازة وتوثيقها (APPROVED)." };
   }
   return { message: "الإجراء تم مسبقاً." };
 }
