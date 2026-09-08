@@ -1,74 +1,30 @@
 
 import React, { useState, useEffect } from 'react';
-import { LeaveType } from '../types';
-
-interface Employee {
-  code: string;
-  name: string;
-  dept: string;
-  title: string;
-}
-
-const EMPLOYEES: Employee[] = [
-  { code: "70250", name: "عبدالهادى محمد صالح خالد", dept: "إدارة المخازن", title: "مدير اللوجستيه" },
-  { code: "71024", name: "مصطفى اسماعيل محمود العبد", dept: "إدارة المخازن", title: "مدير المخازن" },
-  { code: "70335", name: "احمد محمد عبدالرحمن حمدان", dept: "التخطيط و المتابعة", title: "رئيس قسم التخطيط" },
-  { code: "101105", name: "اسلام خالد عبدالفتاح عبدربه", dept: "التخطيط و المتابعة", title: "أمين مخزن أول" },
-  { code: "71142", name: "محمود عبدالمجيب عبدالحفيظ خليفه", dept: "التخطيط و المتابعة", title: "مسؤول تخطيط ومراقبة المخزون" },
-  { code: "101103", name: "احمد كمال محمود حسين", dept: "الخامات", title: "رئيس قسم مخازن الخامات" },
-  { code: "70434", name: "أحمد فرحات قاسم سعيد", dept: "الخامات", title: "مشرف مخازن" },
-  { code: "70430", name: "كامل ممدوح كامل محمد", dept: "الخامات", title: "مشرف مخازن" },
-  { code: "70616", name: "محمود عبدالفتاح رمضان حنفى", dept: "الخامات", title: "أمين مخزن أول" },
-  { code: "70966", name: "إسلام هلال عبدالمعز أبو شنب", dept: "الخامات", title: "أمين مخزن" },
-  { code: "71002", name: "مصطفى أشرف عبد الجليل علام", dept: "الخامات", title: "أمين مخزن" },
-  { code: "71039", name: "عبدالله حامد محمد الشرقاوى", dept: "الخامات", title: "أمين مخزن" },
-  { code: "71093", name: "أسامه عبدالعاطى جلال إبراهيم عدوى", dept: "الخامات", title: "أمين مخزن" },
-  { code: "71118", name: "محمود ناصر محمد الطاهر الصعيدى", dept: "الخامات", title: "أمين مخزن" },
-  { code: "71136", name: "أحمد مختار رفاعى محمد عيسوى", dept: "الخامات", title: "أمين مخزن" },
-  { code: "70573", name: "محمد إبراهيم رزق خليل", dept: "الخامات", title: "عامل خدمات" },
-  { code: "70436", name: "محمود محمد عبدالسميع غالى", dept: "المنتج التام", title: "رئيس قسم المنتج التام" },
-  { code: "70290", name: "علاء محمد محمد هلال البحيرى", dept: "المنتج التام", title: "مسئول أول خروج بضاعة" },
-  { code: "70455", name: "أحمد توفيق صالح عبدالله", dept: "المنتج التام", title: "مسئول أول خروج بضاعة" },
-  { code: "70291", name: "سامح أحمد السعيد أحمد فايد", dept: "المنتج التام", title: "مشرف مخازن" },
-  { code: "70499", name: "محمد عبدالرازق الرفاعى أحمد", dept: "المنتج التام", title: "مشرف مخازن" },
-  { code: "70400", name: "على حسنين على حسنين", dept: "المنتج التام", title: "مشرف مخازن" },
-  { code: "70498", name: "عبدالله محمد أحمد طايل", dept: "المنتج التام", title: "أمين مخزن" },
-  { code: "70053", name: "محمد يسرى عبد الفتاح نعيم", dept: "المنتج التام", title: "أمين مخزن" },
-  { code: "71091", name: "خالد محمد عيد عبدالمجيد", dept: "المنتج التام", title: "أمين مخزن" },
-  { code: "71090", name: "رمضان عبدالجيد عبدربه عطا يا", dept: "المنتج التام", title: "أمين مخزن" },
-  { code: "71099", name: "أحمد إبراهيم محمد رضوان", dept: "المنتج التام", title: "أمين مخزن" },
-  { code: "70731", name: "هاني فراج عبدالغفور عبدالغنى", dept: "المنتج التام", title: "عامل خدمات" },
-  { code: "70789", name: "إبراهيم حسن محروس العشماوى", dept: "المنتج التام", title: "عامل خدمات" },
-  { code: "70090", name: "رمضان زينهم على زينهم العتر", dept: "المخازن العامة", title: "رئيس قسم المخازن العامة" },
-  { code: "70336", name: "صبحي محمد جمعة ابوحسن", dept: "المخازن العامة", title: "مشرف مخازن" },
-  { code: "70369", name: "محمد جلال امام عطالله", dept: "المخازن العامة", title: "أمين مخزن أول" },
-  { code: "70289", name: "وليد عطية محمد سالم", dept: "المخازن العامة", title: "أمين مخزن أول" },
-  { code: "70314", name: "فتح جبر عبداللطيف طايل", dept: "المخازن العامة", title: "أمين مخزن" },
-  { code: "70565", name: "محمد مصطفى محمد عبدالعظيم", dept: "المخازن العامة", title: "أمين مخزن" },
-  { code: "71059", name: "أحمد جمال سليمان القواس", dept: "المخازن العامة", title: "أمين مخزن" },
-  { code: "70633", name: "محمد عيد اسماعيل حماد", dept: "المخازن العامة", title: "عامل خدمات" },
-  { code: "70823", name: "أيمن محمد النادي محمد عليوه", dept: "حركة المعدات", title: "رئيس قسم حركة المعدات" },
-  { code: "70255", name: "عبدالصادق محمد عبدالصادق رزق", dept: "حركة المعدات", title: "سائق كلارك" },
-  { code: "70359", name: "أسامه عبدالمحسن عبدالعاطي غنيم", dept: "حركة المعدات", title: "سائق كلارك" },
-  { code: "70351", name: "أحمد هاشم محمود عامر", dept: "حركة المعدات", title: "سائق كلارك" },
-  { code: "70256", name: "سمير معتمد عبدالفتاح النزلاوى", dept: "حركة المعدات", title: "سائق كلارك" },
-  { code: "70522", name: "مصطفى لطفى خميس طلبه", dept: "حركة المعدات", title: "سائق كلارك" },
-  { code: "70480", name: "أحمد شندى عثمان محمد", dept: "حركة المعدات", title: "سائق كلارك" },
-  { code: "70765", name: "علي عبدالعزيز عبدالرازق حلاوه", dept: "حركة المعدات", title: "سائق كلارك" },
-  { code: "71003", name: "عمرو عبدالسلام عبدالسلام غباشي", dept: "حركة المعدات", title: "سائق كلارك" },
-  { code: "70976", name: "أسامه جمعه السيد عبدالسلام", dept: "حركة المعدات", title: "سائق كلارك" },
-  { code: "71028", name: "علاء عادل عبدالمنعم سويدان", dept: "حركة المعدات", title: "سائق كلارك" },
-  { code: "70923", name: "أحمد حسني عبدالشكور السمرى", dept: "حركة المعدات", title: "سائق كلارك" },
-  { code: "70691", name: "كريم نجاح عدلان خاطر", dept: "حركة المعدات", title: "سائق كلارك" },
-  { code: "71163", name: "أحمد محمد سالم علي", dept: "حركة المعدات", title: "سائق كلارك" }
-];
+import { LeaveType, Employee } from '../types';
 
 interface LeaveFormProps {
-  onSubmit: (data: any) => void;
+  employees: Employee[];
   isLoading: boolean;
+  isSyncing?: boolean;
+  onRefreshEmployees?: () => Promise<void>;
+  lastSyncTime?: Date | null;
+  submitterEmail?: string;
+  canEditSubmitter?: boolean;
+  onUpdateSubmitterEmail?: (email: string) => void;
+  onSubmit: (data: any) => void;
 }
 
-export const LeaveForm: React.FC<LeaveFormProps> = ({ onSubmit, isLoading }) => {
+export const LeaveForm: React.FC<LeaveFormProps> = ({ 
+  employees, 
+  isLoading, 
+  isSyncing = false,
+  onRefreshEmployees,
+  lastSyncTime,
+  submitterEmail = 'sadat.planning.officer@dakahlia.net',
+  canEditSubmitter = false,
+  onUpdateSubmitterEmail,
+  onSubmit 
+}) => {
   const getTodayStr = () => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -85,8 +41,16 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({ onSubmit, isLoading }) => 
     startDate: '',
     daysCount: 1,
     endDate: '',
-    reason: ''
+    reason: '',
+    annualBalance: 0
   });
+
+  const [isEditingSubmitter, setIsEditingSubmitter] = useState(false);
+  const [tempSubmitterEmail, setTempSubmitterEmail] = useState(submitterEmail);
+
+  useEffect(() => {
+    setTempSubmitterEmail(submitterEmail);
+  }, [submitterEmail]);
 
   const formatDateDisplay = (dateStr: string) => {
     if (!dateStr) return '';
@@ -95,14 +59,15 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({ onSubmit, isLoading }) => 
   };
 
   const autoFillEmployee = (key: 'code' | 'name', value: string) => {
-    const emp = EMPLOYEES.find(e => e[key] === value);
+    const emp = employees.find(e => e[key] === value);
     if (emp) {
       setFormData(prev => ({
         ...prev,
         employeeCode: emp.code,
         employeeName: emp.name,
         department: emp.dept,
-        jobTitle: emp.title
+        jobTitle: emp.title || prev.jobTitle || 'موظف',
+        annualBalance: emp.annualBalance !== undefined ? emp.annualBalance : 0
       }));
     } else {
       setFormData(prev => ({ ...prev, [key === 'code' ? 'employeeCode' : 'employeeName']: value }));
@@ -133,17 +98,137 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({ onSubmit, isLoading }) => 
     e.preventDefault();
     onSubmit({
       ...formData,
-      displayIssueDate: formatDateDisplay(formData.issueDate), // إرسال تاريخ التحرير بتنسيق العرض
+      submitterEmail: submitterEmail, // حساب Google المنشئ للطلب
+      displayIssueDate: formatDateDisplay(formData.issueDate),
       displayStartDate: formatDateDisplay(formData.startDate),
       displayEndDate: formatDateDisplay(formData.endDate)
     });
   };
 
+  const handleSaveSubmitter = () => {
+    if (onUpdateSubmitterEmail && tempSubmitterEmail.trim()) {
+      onUpdateSubmitterEmail(tempSubmitterEmail.trim());
+    }
+    setIsEditingSubmitter(false);
+  };
+
   const inputClasses = "w-full px-5 py-3 rounded-xl border-2 border-gray-100 bg-gray-50 focus:bg-white focus:border-[#1e3a8a] focus:ring-0 transition-all outline-none text-sm font-bold text-gray-700 placeholder:text-gray-300 shadow-sm";
   const labelClasses = "block text-sm font-black text-[#1e3a8a] mb-2 pr-1";
 
+  // فحص هل عدد الأيام يتجاوز الرصيد السنوي
+  const isExceedingBalance = formData.leaveType === LeaveType.ANNUAL && 
+    formData.annualBalance !== undefined && 
+    Number(formData.daysCount) > formData.annualBalance && 
+    Boolean(formData.employeeCode);
+
   return (
     <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in duration-700">
+      {/* شريط المزامنة مع شيت Google المباشر */}
+      <div className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white p-5 rounded-3xl shadow-lg border border-blue-800 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-green-400">
+            <i className={`fas fa-table text-lg ${isSyncing ? 'fa-spin' : ''}`}></i>
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-black text-sm">مزامنة الموظفين مع شيت Google</span>
+              <span className="bg-green-500/20 text-green-300 border border-green-400/30 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                تبويب: data
+              </span>
+            </div>
+            <p className="text-xs text-blue-200 mt-0.5">
+              تم تحميل <strong className="text-white font-mono">{employees.length}</strong> موظف برصيدهم السنوي مباشرة من الشيت
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {lastSyncTime && (
+            <span className="text-[11px] text-blue-200 font-medium hidden sm:inline">
+              آخر تحديث: {lastSyncTime.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )}
+          {onRefreshEmployees && (
+            <button
+              type="button"
+              onClick={onRefreshEmployees}
+              disabled={isSyncing}
+              className="px-4 py-2 bg-white/15 hover:bg-white/25 active:scale-95 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-2 border border-white/20 disabled:opacity-50"
+              title="سحب أحدث التعديلات من الشيت الآن"
+            >
+              <i className={`fas fa-sync-alt ${isSyncing ? 'fa-spin text-yellow-300' : ''}`}></i>
+              <span>{isSyncing ? 'جاري المزامنة...' : 'مزامنة الآن'}</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* صندوق حساب Google المفتوح (مقدم الطلب) - منفصل عن بريد الموظف */}
+      <div className="p-5 bg-amber-50/70 border-2 border-amber-200/80 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center mt-0.5 shadow-sm">
+            <i className="fas fa-user-shield text-lg"></i>
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black text-amber-900 uppercase">حساب Google المفتوح (مقدم / منشئ الطلب):</span>
+              <span className="bg-amber-200 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full">
+                يظهر تلقائياً للمدير في إيميل الاعتماد
+              </span>
+            </div>
+            
+            {isEditingSubmitter && canEditSubmitter ? (
+              <div className="flex items-center gap-2 mt-2">
+                <input
+                  type="email"
+                  value={tempSubmitterEmail}
+                  onChange={(e) => setTempSubmitterEmail(e.target.value)}
+                  className="px-3 py-1.5 rounded-lg border-2 border-amber-400 text-xs font-mono font-bold outline-none bg-white text-gray-800"
+                  placeholder="name@dakahlia.net"
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveSubmitter}
+                  className="px-3 py-1.5 bg-amber-600 text-white text-xs font-bold rounded-lg hover:bg-amber-700"
+                >
+                  حفظ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingSubmitter(false)}
+                  className="px-2 py-1.5 text-gray-500 text-xs"
+                >
+                  إلغاء
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2 mt-1">
+                <span className="font-mono text-sm font-black text-blue-900 bg-white px-3 py-1 rounded-lg border border-amber-200 shadow-sm" dir="ltr">
+                  {submitterEmail}
+                </span>
+                {canEditSubmitter ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingSubmitter(true)}
+                    className="text-xs text-amber-700 hover:text-amber-900 underline font-bold mr-2"
+                  >
+                    تعديل الحساب (صلاحية المسؤول)
+                  </button>
+                ) : (
+                  <span className="text-[11px] text-gray-500 bg-amber-100/60 px-2 py-0.5 rounded font-bold border border-amber-200/60 flex items-center gap-1">
+                    <i className="fas fa-lock text-[10px] text-amber-600"></i>
+                    حساب موثق تلقائياً (غير قابل للتعديل)
+                  </span>
+                )}
+              </div>
+            )}
+            <p className="text-[11px] text-amber-800 mt-1">
+              * هذا الحساب هو المسؤول الذي يقوم بإنشاء الطلب حالياً، وهو منفصل تماماً عن البريد الشخصي للموظف بالأسفل.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* حقل تاريخ التحرير يدوياً */}
       <div className="p-6 bg-blue-50/20 rounded-3xl border-2 border-blue-100/50">
         <label className={labelClasses}><i className="fas fa-calendar-day ml-2 text-blue-500"></i> تحريراً في (تاريخ الطلب)</label>
@@ -154,7 +239,7 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({ onSubmit, isLoading }) => 
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-1">
-          <label className={labelClasses}><i className="fas fa-id-card ml-2 text-blue-300"></i> كود الموظف</label>
+          <label className={labelClasses}><i className="fas fa-id-card ml-2 text-blue-300"></i> كود الموظف (من الشيت)</label>
           <input 
             list="codes-list"
             name="employeeCode" 
@@ -165,11 +250,26 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({ onSubmit, isLoading }) => 
             onChange={handleChange} 
           />
           <datalist id="codes-list">
-            {EMPLOYEES.map(emp => <option key={emp.code} value={emp.code}>{emp.name}</option>)}
+            {employees.map(emp => (
+              <option key={emp.code} value={emp.code}>
+                {emp.name} - {emp.dept} {emp.annualBalance !== undefined ? `(رصيد: ${emp.annualBalance})` : ''}
+              </option>
+            ))}
           </datalist>
         </div>
+
         <div className="md:col-span-2">
-          <label className={labelClasses}><i className="fas fa-user ml-2 text-blue-300"></i> الاسم الثلاثي للموظف</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className={labelClasses}><i className="fas fa-user ml-2 text-blue-300"></i> اسم الموظف (من الشيت)</label>
+            {formData.employeeCode && (
+              <span className={`text-xs px-3 py-1 rounded-full font-black flex items-center gap-1 ${
+                formData.annualBalance > 0 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-gray-100 text-gray-700'
+              }`}>
+                <i className="fas fa-wallet text-[10px]"></i>
+                الرصيد السنوي للشيت: <strong className="font-mono">{formData.annualBalance}</strong> يوم
+              </span>
+            )}
+          </div>
           <input 
             list="names-list"
             name="employeeName" 
@@ -180,18 +280,39 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({ onSubmit, isLoading }) => 
             onChange={handleChange} 
           />
           <datalist id="names-list">
-            {EMPLOYEES.map(emp => <option key={emp.name} value={emp.name}>{emp.code}</option>)}
+            {employees.map(emp => (
+              <option key={emp.name} value={emp.name}>
+                كود: {emp.code} - {emp.dept} {emp.annualBalance !== undefined ? `(رصيد: ${emp.annualBalance})` : ''}
+              </option>
+            ))}
           </datalist>
         </div>
         
         <div>
           <label className={labelClasses}><i className="fas fa-briefcase ml-2 text-blue-300"></i> الوظيفة</label>
-          <input type="text" name="jobTitle" required placeholder="المسمى الوظيفي" className={inputClasses + " bg-gray-100 pointer-events-none"} value={formData.jobTitle} readOnly />
+          <input 
+            type="text" 
+            name="jobTitle" 
+            required 
+            placeholder="المسمى الوظيفي" 
+            className={inputClasses} 
+            value={formData.jobTitle} 
+            onChange={handleChange} 
+          />
         </div>
+
         <div>
-          <label className={labelClasses}><i className="fas fa-building ml-2 text-blue-300"></i> القسم</label>
-          <input type="text" name="department" required className={inputClasses + " bg-gray-100 pointer-events-none"} value={formData.department} readOnly />
+          <label className={labelClasses}><i className="fas fa-building ml-2 text-blue-300"></i> القسم (تلقائي من الشيت)</label>
+          <input 
+            type="text" 
+            name="department" 
+            required 
+            className={inputClasses + " bg-gray-100 pointer-events-none font-bold text-[#1e3a8a]"} 
+            value={formData.department} 
+            readOnly 
+          />
         </div>
+
         <div>
           <label className={labelClasses}><i className="fas fa-list-ul ml-2 text-blue-300"></i> نوع الإجازة</label>
           <select name="leaveType" required className={inputClasses} value={formData.leaveType} onChange={handleChange}>
@@ -210,6 +331,12 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({ onSubmit, isLoading }) => 
         <div>
           <label className={labelClasses}><i className="fas fa-hashtag ml-2 text-blue-500"></i> عدد الأيام المطلوبة</label>
           <input type="number" name="daysCount" min="1" required className={inputClasses} value={formData.daysCount} onChange={handleChange} />
+          {isExceedingBalance && (
+            <div className="text-[11px] text-red-600 font-bold mt-1.5 flex items-center gap-1 bg-red-50 p-2 rounded-lg border border-red-200">
+              <i className="fas fa-exclamation-triangle"></i>
+              <span>الأيام المطلوبة ({formData.daysCount}) تتجاوز الرصيد السنوي ({formData.annualBalance})</span>
+            </div>
+          )}
         </div>
         <div>
           <label className={labelClasses}><i className="fas fa-calendar-check ml-2 text-green-500"></i> تاريخ العودة (تلقائي)</label>
@@ -221,8 +348,21 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({ onSubmit, isLoading }) => 
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label className={labelClasses}><i className="fas fa-envelope ml-2 text-blue-300"></i> البريد الإلكتروني للموظف</label>
-          <input type="email" name="employeeEmail" required placeholder="name@dakahlia.net" className={inputClasses} value={formData.employeeEmail} onChange={handleChange} />
+          <div className="flex items-center justify-between mb-1">
+            <label className={labelClasses}><i className="fas fa-envelope ml-2 text-blue-300"></i> البريد الإلكتروني للموظف صاحب الإجازة</label>
+          </div>
+          <input 
+            type="email" 
+            name="employeeEmail" 
+            required 
+            placeholder="employee@dakahlia.net" 
+            className={inputClasses} 
+            value={formData.employeeEmail} 
+            onChange={handleChange} 
+          />
+          <span className="text-[11px] text-gray-400 mt-1 block">
+            * هذا البريد الشخصي للموظف صاحب الإجازة لإرسال الموافقة النهائية له.
+          </span>
         </div>
         <div>
           <label className={labelClasses}><i className="fas fa-comment-dots ml-2 text-blue-300"></i> ملاحظات إضافية</label>
@@ -239,7 +379,7 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({ onSubmit, isLoading }) => 
           {isLoading ? (
             <>
               <i className="fas fa-circle-notch fa-spin"></i>
-              <span>جاري معالجة الطلب...</span>
+              <span>جاري معالجة الطلب وإرسال إشعار للمدير...</span>
             </>
           ) : (
             <>

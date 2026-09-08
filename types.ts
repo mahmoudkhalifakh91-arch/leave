@@ -15,12 +15,22 @@ export enum RequestStatus {
   REJECTED = 'مرفوض'
 }
 
+export interface Employee {
+  code: string;
+  name: string;
+  dept: string;
+  title: string;
+  annualBalance?: number;
+}
+
 export interface LeaveRequest {
   id?: string;
   employeeName: string;
   employeeCode: string;
   jobTitle: string;
   employeeEmail: string;
+  submitterEmail?: string; // البريد الإلكتروني لمنشئ الطلب (حساب الجيميل المفتوح)
+  annualBalance?: number;  // الرصيد السنوي المسحوب من الشيت
   department: string;
   leaveType: LeaveType;
   startDate: string;

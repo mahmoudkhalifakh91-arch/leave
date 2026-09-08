@@ -1,11 +1,13 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { LeaveForm } from './components/LeaveForm';
 import { StatusBadge } from './components/StatusBadge';
 import { SetupGuide } from './components/SetupGuide';
 import { RequestDetails } from './components/RequestDetails';
-import { submitLeaveRequest } from './services/gasService';
-import { LeaveRequest, RequestStatus } from './types';
+import { submitLeaveRequest, fetchEmployeesFromSheet, getStoredSubmitterEmail, setStoredSubmitterEmail } from './services/gasService';
+import { LeaveRequest, RequestStatus, Employee } from './types';
+
+const ADMIN_EMAIL = 'sadat.planning.officer@dakahlia.net';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'form' | 'dashboard' | 'setup'>('form');
@@ -14,10 +16,50 @@ const App: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
+  // حالة الموظفين والمزامنة من شيت Google
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [isSyncingEmployees, setIsSyncingEmployees] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+  const [submitterEmail, setSubmitterEmail] = useState<string>(getStoredSubmitterEmail());
+  const [adminViewAll, setAdminViewAll] = useState(false);
+
+  const isAdmin = submitterEmail.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
+  const syncEmployees = useCallback(async () => {
+    setIsSyncingEmployees(true);
+    try {
+      const res = await fetchEmployeesFromSheet();
+      if (res.success && res.employees.length > 0) {
+        setEmployees(res.employees);
+        setLastSyncTime(new Date());
+        if (res.activeUser) {
+          setSubmitterEmail(res.activeUser);
+        }
+      }
+    } catch (err) {
+      console.error('Sync failed', err);
+    } finally {
+      setIsSyncingEmployees(false);
+    }
+  }, []);
+
   useEffect(() => {
     const saved = localStorage.getItem('leave_requests_warehouse');
-    if (saved) setSubmissions(JSON.parse(saved));
-  }, []);
+    if (saved) {
+      try {
+        setSubmissions(JSON.parse(saved));
+      } catch (e) {
+        console.error('Failed to parse submissions', e);
+      }
+    }
+    // مزامنة الموظفين من الشيت عند بدء التطبيق
+    syncEmployees();
+  }, [syncEmployees]);
+
+  const handleUpdateSubmitterEmail = (newEmail: string) => {
+    setSubmitterEmail(newEmail);
+    setStoredSubmitterEmail(newEmail);
+  };
 
   const saveSubmissions = (newSubs: LeaveRequest[]) => {
     setSubmissions(newSubs);
@@ -40,6 +82,7 @@ const App: React.FC = () => {
         status: RequestStatus.PENDING_MANAGER,
         createdAt: new Date().toISOString(),
         displayIssueDate: data.displayIssueDate,
+        submitterEmail: submitterEmail,
         signatures: {}
       };
       
@@ -48,7 +91,7 @@ const App: React.FC = () => {
       setIsSubmitting(false);
       setMessage({ 
         type: 'success', 
-        text: `تم إرسال الطلب ${requestId} بنجاح! جاري توجيهه للمدير المباشر.` 
+        text: `تم إرسال الطلب ${requestId} بنجاح من حساب (${submitterEmail})! جاري توجيهه للمدير المباشر.` 
       });
       setActiveTab('dashboard');
     } else {
@@ -60,6 +103,14 @@ const App: React.FC = () => {
     }
   };
 
+  // تصفية الطلبات: يظهر لكل إيميل فقط الطلبات التي أنشأها، ولا يرى طلبات الآخرين
+  const userSubmissions = submissions.filter(req => {
+    if (isAdmin && adminViewAll) return true;
+    const reqEmail = (req.submitterEmail || '').trim().toLowerCase();
+    const currentEmail = submitterEmail.trim().toLowerCase();
+    return reqEmail === currentEmail;
+  });
+
   return (
     <div className="max-w-6xl mx-auto py-10 px-4 font-['Tajawal'] text-right" dir="rtl">
       <header className="mb-10 flex flex-col md:flex-row items-center justify-between gap-8 bg-white p-8 rounded-3xl shadow-xl border border-blue-50">
@@ -70,17 +121,43 @@ const App: React.FC = () => {
           <div>
             <h1 className="text-3xl font-black text-[#1e3a8a] mb-1">نظام طلبات الإجازات الإلكتروني</h1>
             <h2 className="text-xl font-bold text-yellow-600">شركة الدقهلية للدواجن - قطاع المخازن</h2>
-            <div className="flex items-center gap-3 mt-3">
+            <div className="flex flex-wrap items-center gap-3 mt-3">
               <span className="bg-blue-600 text-white text-[11px] px-3 py-1 rounded-full font-bold shadow-sm">FORM F-HR-601</span>
               <span className="text-gray-400 text-[11px] font-black border-r pr-3 border-gray-200">ISO 9001:2015 CERTIFIED SYSTEM</span>
+              <span className="bg-green-100 text-green-800 text-[11px] px-3 py-1 rounded-full font-bold flex items-center gap-1 border border-green-200">
+                <i className="fas fa-database text-[9px]"></i>
+                متصل بشيت: تصريح اجازات (data)
+              </span>
+              <span className="bg-amber-100 text-amber-900 text-[11px] px-3 py-1 rounded-full font-bold flex items-center gap-1 border border-amber-200 font-mono" dir="ltr">
+                <i className="fas fa-user text-[9px]"></i>
+                {submitterEmail}
+              </span>
             </div>
           </div>
         </div>
         
         <nav className="flex bg-gray-100/50 p-2 rounded-2xl border border-gray-200 shadow-sm">
-          <button onClick={() => setActiveTab('form')} className={`px-6 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === 'form' ? 'bg-[#1e3a8a] text-white shadow-lg' : 'text-gray-500 hover:bg-white'}`}>طلب إجازة</button>
-          <button onClick={() => setActiveTab('dashboard')} className={`px-6 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === 'dashboard' ? 'bg-[#1e3a8a] text-white shadow-lg' : 'text-gray-500 hover:bg-white'}`}>سجل الطلبات</button>
-          <button onClick={() => setActiveTab('setup')} className={`px-6 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === 'setup' ? 'bg-[#1e3a8a] text-white shadow-lg' : 'text-gray-500 hover:bg-white'}`}>الإعدادات</button>
+          <button 
+            onClick={() => setActiveTab('form')} 
+            className={`px-6 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === 'form' ? 'bg-[#1e3a8a] text-white shadow-lg' : 'text-gray-500 hover:bg-white'}`}
+          >
+            طلب إجازة
+          </button>
+          <button 
+            onClick={() => setActiveTab('dashboard')} 
+            className={`px-6 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === 'dashboard' ? 'bg-[#1e3a8a] text-white shadow-lg' : 'text-gray-500 hover:bg-white'}`}
+          >
+            سجل طلباتي ({userSubmissions.length})
+          </button>
+          {/* يظهر دليل الربط والشيت حصرياً لحساب sadat.planning.officer@dakahlia.net */}
+          {isAdmin && (
+            <button 
+              onClick={() => setActiveTab('setup')} 
+              className={`px-6 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === 'setup' ? 'bg-[#1e3a8a] text-white shadow-lg' : 'text-gray-500 hover:bg-white'}`}
+            >
+              دليل الربط والشيت
+            </button>
+          )}
         </nav>
       </header>
 
@@ -94,36 +171,85 @@ const App: React.FC = () => {
       <main className="bg-white rounded-[2.5rem] shadow-2xl border border-gray-100 overflow-hidden min-h-[500px]">
         <div className="h-3 bg-gradient-to-l from-[#1e3a8a] to-blue-500"></div>
         <div className="p-8 md:p-12">
-          {activeTab === 'form' && <LeaveForm onSubmit={handleSubmit} isLoading={isSubmitting} />}
+          {activeTab === 'form' && (
+            <LeaveForm 
+              employees={employees}
+              isLoading={isSubmitting}
+              isSyncing={isSyncingEmployees}
+              onRefreshEmployees={syncEmployees}
+              lastSyncTime={lastSyncTime}
+              submitterEmail={submitterEmail}
+              canEditSubmitter={isAdmin}
+              onUpdateSubmitterEmail={handleUpdateSubmitterEmail}
+              onSubmit={handleSubmit} 
+            />
+          )}
+
           {activeTab === 'dashboard' && (
             <div className="space-y-8">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="border-r-4 border-yellow-500 pr-5">
-                  <h2 className="text-2xl font-black text-gray-800">تتبع الطلبات</h2>
+                  <h2 className="text-2xl font-black text-gray-800">
+                    {isAdmin && adminViewAll ? 'كافة طلبات القطاع (لوحة المسؤول)' : 'سجل طلباتي الخاصة'}
+                  </h2>
+                  <p className="text-xs text-gray-500 mt-1">
+                    يتم عرض الطلبات التي تم إنشاؤها من حسابك فقط (<span className="font-mono font-bold text-blue-900" dir="ltr">{submitterEmail}</span>)
+                  </p>
                 </div>
+
+                {/* صلاحية خاصة للمسؤول للتبديل بين طلباته الخاصة وكافة الطلبات */}
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => setAdminViewAll(!adminViewAll)}
+                    className="px-4 py-2 bg-blue-50 border border-blue-200 text-[#1e3a8a] rounded-xl text-xs font-bold hover:bg-blue-100 transition-all flex items-center gap-2 self-start"
+                  >
+                    <i className={`fas ${adminViewAll ? 'fa-user-check' : 'fa-users-cog'}`}></i>
+                    <span>{adminViewAll ? 'عرض طلباتي فقط' : 'عرض كافة طلبات النظام (مشرف)'}</span>
+                  </button>
+                )}
               </div>
               
-              <div className="overflow-hidden rounded-2xl border border-gray-100">
-                {submissions.length === 0 ? (
-                  <div className="text-center py-20 text-gray-400 font-bold">لم ترسل أي طلبات بعد</div>
+              <div className="overflow-hidden rounded-2xl border border-gray-100 shadow-sm">
+                {userSubmissions.length === 0 ? (
+                  <div className="text-center py-20 text-gray-400 font-bold">
+                    <i className="fas fa-folder-open text-4xl block mb-3 text-gray-300"></i>
+                    لم يتم العثور على أي طلبات مسجلة من هذا الحساب ({submitterEmail})
+                  </div>
                 ) : (
                   <table className="w-full text-right">
                     <thead className="bg-gray-50 text-xs font-black uppercase text-gray-400">
                       <tr>
                         <th className="py-4 px-6">الموظف</th>
-                        <th className="py-4 px-6">النوع</th>
+                        <th className="py-4 px-6">مقدم الطلب (المنشئ)</th>
+                        <th className="py-4 px-6">النوع والمدة</th>
                         <th className="py-4 px-6">الحالة</th>
                         <th className="py-4 px-6 text-center">الإجراء</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {submissions.map((req) => (
+                      {userSubmissions.map((req) => (
                         <tr key={req.id} className="hover:bg-blue-50/50 transition-all">
-                          <td className="py-4 px-6"><div className="font-bold">{req.employeeName}</div><div className="text-[10px] font-mono text-blue-500">{req.id}</div></td>
-                          <td className="py-4 px-6 text-sm">{req.leaveType}</td>
+                          <td className="py-4 px-6">
+                            <div className="font-bold text-[#1e3a8a]">{req.employeeName}</div>
+                            <div className="text-[11px] font-mono text-gray-500">كود: {req.employeeCode} | {req.department}</div>
+                            <div className="text-[10px] font-mono text-blue-500">{req.id}</div>
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="text-xs font-mono font-bold text-gray-700 bg-gray-100 px-2 py-1 rounded inline-block" dir="ltr">
+                              {req.submitterEmail || 'غير محدد'}
+                            </div>
+                            <div className="text-[10px] text-gray-400 mt-0.5">حساب منشئ المعاملة</div>
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="text-sm font-bold">{req.leaveType}</div>
+                            <div className="text-xs text-gray-500">{req.daysCount} أيام ({req.startDate})</div>
+                          </td>
                           <td className="py-4 px-6"><StatusBadge status={req.status} /></td>
                           <td className="py-4 px-6 text-center">
-                            <button onClick={() => setSelectedRequest(req)} className="text-[#1e3a8a] text-xs font-black hover:underline">عرض التفاصيل</button>
+                            <button onClick={() => setSelectedRequest(req)} className="text-[#1e3a8a] bg-blue-50 px-3 py-1.5 rounded-lg text-xs font-black hover:bg-blue-100 transition-colors">
+                              عرض التفاصيل
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -133,7 +259,7 @@ const App: React.FC = () => {
               </div>
             </div>
           )}
-          {activeTab === 'setup' && <SetupGuide />}
+          {activeTab === 'setup' && isAdmin && <SetupGuide />}
         </div>
       </main>
 

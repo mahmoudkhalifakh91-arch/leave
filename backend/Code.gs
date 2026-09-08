@@ -12,11 +12,11 @@ const CONFIG = {
   // تعريف الأقسام ومديريها المباشرين
   DEPARTMENTS: {
     "التخطيط و المتابعة": {
-      managerEmail: "sadat.planning.officer@dakahlia.net",
+      managerEmail: "ahmed.hamdan@dakahlia.net",
       managerName: "أ/ رئيس قسم التخطيط و المتابعة"
     },
     "إدارة المخازن": {
-      managerEmail: "sadat.planning.officer@dakahlia.net",
+      managerEmail: "ahmed.hamdan@dakahlia.net",
       managerName: "أ/ مدير إدارة المخازن"
     },
     "الخامات": {
@@ -44,7 +44,7 @@ const CONFIG = {
   // الجهات الموحدة
   FINAL_APPROVERS: {
     DEPT_HEAD: {
-      email: "sadat.planning.officer@dakahlia.net",
+      email: "ahmed.hamdan@dakahlia.net",
       name: "أ/ مدير الاداره"
     },
     HR: {

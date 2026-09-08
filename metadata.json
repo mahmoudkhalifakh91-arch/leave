@@ -1,9 +1,8 @@
 {
   "name": "ISO-Standard Leave Management System",
   "description": "A professional employee leave request system integrated with Google Workspace, featuring automated PDF generation, multi-level approvals, and digital signatures.",
-  "requestFramePermissions": [
-    "camera",
-    "microphone"
-  ],
-  "majorCapabilities": []
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

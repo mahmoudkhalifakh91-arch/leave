@@ -180,13 +180,33 @@ export const RequestDetails: React.FC<RequestDetailsProps> = ({ request, onClose
         <div className="p-10">
           {view === 'doc' ? (
             <div className="space-y-8">
+              {/* بيانات منشئ المعاملة والبريد */}
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center text-sm shadow-sm">
+                    <i className="fas fa-shield-alt"></i>
+                  </div>
+                  <div>
+                    <span className="text-xs font-black text-amber-900 block">حساب Google المنشئ للطلب (مقدم المعاملة):</span>
+                    <span className="font-mono text-xs font-bold text-blue-950" dir="ltr">{request.submitterEmail || 'غير مسجل'}</span>
+                  </div>
+                </div>
+                {request.annualBalance !== undefined && (
+                  <div className="bg-white px-3 py-1.5 rounded-xl border border-amber-200 text-xs font-black text-amber-900">
+                    رصيد الشيت السنوي: <span className="font-mono text-blue-700">{request.annualBalance}</span> يوم
+                  </div>
+                )}
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="p-6 bg-gray-50 rounded-2xl border-2 border-gray-100">
                   <span className="text-[10px] font-black text-gray-400 uppercase block mb-2 tracking-widest">Employee Details</span>
                   <div className="space-y-3">
                     <div className="flex justify-between border-b pb-2"><span className="text-gray-500 text-sm">اسم الموظف:</span> <span className="font-bold text-[#1e3a8a]">{request.employeeName}</span></div>
                     <div className="flex justify-between border-b pb-2"><span className="text-gray-500 text-sm">كود الموظف:</span> <span className="font-bold text-gray-700">{request.employeeCode}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-500 text-sm">المسمى الوظيفي:</span> <span className="font-bold text-gray-700">{request.jobTitle}</span></div>
+                    <div className="flex justify-between border-b pb-2"><span className="text-gray-500 text-sm">القسم:</span> <span className="font-bold text-gray-700">{request.department}</span></div>
+                    <div className="flex justify-between border-b pb-2"><span className="text-gray-500 text-sm">المسمى الوظيفي:</span> <span className="font-bold text-gray-700">{request.jobTitle}</span></div>
+                    <div className="flex justify-between border-b pb-2"><span className="text-gray-500 text-sm">بريد الموظف:</span> <span className="font-mono text-xs font-bold text-gray-700" dir="ltr">{request.employeeEmail}</span></div>
                     <div className="flex justify-between"><span className="text-gray-500 text-sm">تحريراً في:</span> <span className="font-bold text-blue-600">{request.displayIssueDate}</span></div>
                   </div>
                 </div>
@@ -196,7 +216,8 @@ export const RequestDetails: React.FC<RequestDetailsProps> = ({ request, onClose
                   <div className="space-y-3">
                     <div className="flex justify-between border-b pb-2"><span className="text-gray-500 text-sm">نوع الإجازة:</span> <span className="font-bold text-yellow-600">{request.leaveType}</span></div>
                     <div className="flex justify-between border-b pb-2"><span className="text-gray-500 text-sm">مدة الإجازة:</span> <span className="font-bold text-gray-700">{request.daysCount} أيام</span></div>
-                    <div className="flex justify-between"><span className="text-gray-500 text-sm">تاريخ البداية:</span> <span className="font-bold text-gray-700">{request.startDate}</span></div>
+                    <div className="flex justify-between border-b pb-2"><span className="text-gray-500 text-sm">تاريخ البداية:</span> <span className="font-bold text-gray-700">{request.startDate}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500 text-sm">تاريخ العودة:</span> <span className="font-bold text-green-700">{request.endDate}</span></div>
                   </div>
                 </div>
               </div>
@@ -213,15 +234,16 @@ export const RequestDetails: React.FC<RequestDetailsProps> = ({ request, onClose
                      <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-bold">1</div>
                      <div className="flex-1 p-4 bg-green-50 rounded-xl border border-green-100 text-right">
                         <div className="text-xs font-black text-green-700">تم تقديم الطلب</div>
-                        <div className="text-[10px] text-green-600">بواسطة الموظف: {request.employeeName}</div>
+                        <div className="text-[11px] text-green-800 font-bold">للموظف: {request.employeeName}</div>
+                        <div className="text-[10px] text-gray-500 font-mono mt-0.5" dir="ltr">منشئ الطلب: {request.submitterEmail || 'Google Account'}</div>
                      </div>
                   </div>
                   <div className="w-0.5 h-8 bg-gray-200"></div>
                   <div className="flex items-center gap-4 w-full max-w-md">
                      <div className="w-8 h-8 rounded-full bg-yellow-500 text-white flex items-center justify-center text-xs font-bold">2</div>
                      <div className="flex-1 p-4 bg-yellow-50 rounded-xl border border-yellow-100 text-right">
-                        <div className="text-xs font-black text-yellow-700">انتظار المدير المباشر</div>
-                        <div className="text-[10px] text-yellow-600">الإيميل: {LOCAL_CONFIG_EMAILS.DEPARTMENTS[request.department]}</div>
+                        <div className="text-xs font-black text-yellow-700">انتظار موافقة المدير المباشر</div>
+                        <div className="text-[10px] text-yellow-600 font-mono" dir="ltr">الإيميل: {LOCAL_CONFIG_EMAILS.DEPARTMENTS[request.department] || 'مدير القسم'}</div>
                      </div>
                   </div>
                </div>
