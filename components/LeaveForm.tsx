@@ -9,9 +9,6 @@ interface LeaveFormProps {
   onRefreshEmployees?: () => Promise<void>;
   lastSyncTime?: Date | null;
   submitterEmail?: string;
-  canEditSubmitter?: boolean;
-  onOpenAccountModal?: () => void;
-  onUpdateSubmitterEmail?: (email: string) => void;
   onSubmit: (data: any) => void;
 }
 
@@ -22,9 +19,6 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({
   onRefreshEmployees,
   lastSyncTime,
   submitterEmail = '',
-  canEditSubmitter = false,
-  onOpenAccountModal,
-  onUpdateSubmitterEmail,
   onSubmit 
 }) => {
   const getTodayStr = () => {
@@ -46,13 +40,6 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({
     reason: '',
     annualBalance: 0
   });
-
-  const [isEditingSubmitter, setIsEditingSubmitter] = useState(false);
-  const [tempSubmitterEmail, setTempSubmitterEmail] = useState(submitterEmail);
-
-  useEffect(() => {
-    setTempSubmitterEmail(submitterEmail);
-  }, [submitterEmail]);
 
   const formatDateDisplay = (dateStr: string) => {
     if (!dateStr) return '';
@@ -98,26 +85,13 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!submitterEmail || !submitterEmail.trim()) {
-      if (onOpenAccountModal) {
-        onOpenAccountModal();
-      }
-      return;
-    }
     onSubmit({
       ...formData,
-      submitterEmail: submitterEmail.trim(), // حساب Google المنشئ للطلب
+      submitterEmail: submitterEmail ? submitterEmail.trim() : '', // يتم تسجيله تلقائياً بحساب Google في المتصفح مثل Google Forms
       displayIssueDate: formatDateDisplay(formData.issueDate),
       displayStartDate: formatDateDisplay(formData.startDate),
       displayEndDate: formatDateDisplay(formData.endDate)
     });
-  };
-
-  const handleSaveSubmitter = () => {
-    if (onUpdateSubmitterEmail && tempSubmitterEmail.trim()) {
-      onUpdateSubmitterEmail(tempSubmitterEmail.trim());
-    }
-    setIsEditingSubmitter(false);
   };
 
   const inputClasses = "w-full px-5 py-3 rounded-xl border-2 border-gray-100 bg-gray-50 focus:bg-white focus:border-[#1e3a8a] focus:ring-0 transition-all outline-none text-sm font-bold text-gray-700 placeholder:text-gray-300 shadow-sm";
@@ -171,52 +145,31 @@ export const LeaveForm: React.FC<LeaveFormProps> = ({
         </div>
       </div>
 
-      {/* صندوق حساب Google المفتوح (مقدم الطلب) - منفصل عن بريد الموظف */}
-      <div className="p-5 bg-amber-50/70 border-2 border-amber-200/80 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center mt-0.5 shadow-sm">
-            <i className="fas fa-user-shield text-lg"></i>
+      {/* شريط تسجيل حساب Google تلقائياً من المتصفح (نظام Google Forms تماماً بدون اختيار أو نوافذ يدوية) */}
+      <div className="p-4 bg-slate-50 border border-slate-200/90 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
+            <i className="fab fa-google text-lg"></i>
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-black text-amber-900 uppercase">حساب Google المفتوح (مقدم / منشئ الطلب):</span>
-              <span className="bg-amber-200 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full">
-                يظهر تلقائياً للمدير في إيميل الاعتماد
+              <span className="text-xs font-black text-gray-900">تسجيل حساب Google تلقائياً (مثل Google Forms):</span>
+              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-emerald-200">
+                تسجيل تلقائي
               </span>
             </div>
-            
-            {submitterEmail ? (
-              <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                <span className="font-mono text-sm font-black text-blue-900 bg-white px-3 py-1.5 rounded-xl border border-amber-300 shadow-sm" dir="ltr">
-                  {submitterEmail}
-                </span>
-                {onOpenAccountModal && (
-                  <button
-                    type="button"
-                    onClick={onOpenAccountModal}
-                    className="text-xs text-amber-900 hover:text-blue-900 bg-amber-200/70 hover:bg-amber-200 px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition-all border border-amber-300 shadow-sm"
-                  >
-                    <i className="fas fa-sync-alt text-[10px]"></i>
-                    تبديل الحساب
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="mt-2">
-                <button
-                  type="button"
-                  onClick={onOpenAccountModal}
-                  className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md flex items-center gap-2 animate-bounce"
-                >
-                  <i className="fas fa-sign-in-alt"></i>
-                  اضغط هنا لتسجيل حسابك للمتابعة
-                </button>
-              </div>
-            )}
-            <p className="text-[11px] text-amber-800 mt-1.5">
-              * هذا الحساب هو المسؤول الذي يقوم بإنشاء الطلب حالياً، وهو منفصل تماماً عن البريد الشخصي للموظف بالأسفل.
+            <p className="text-xs text-gray-600 mt-0.5">
+              {submitterEmail ? (
+                <>الحساب المفتوح في المتصفح حالياً: <strong className="font-mono text-blue-900 font-bold" dir="ltr">{submitterEmail}</strong> (يُسجل تلقائياً باسم منشئ الطلب)</>
+              ) : (
+                <>يتم تسجيل البريد الإلكتروني المرتبط بجلسة Google المفتوحة في المتصفح تلقائياً عند إرسال الطلب</>
+              )}
             </p>
           </div>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 px-3.5 py-1.5 rounded-xl border border-emerald-200 font-bold self-stretch sm:self-auto justify-center">
+          <i className="fas fa-check-circle text-emerald-600"></i>
+          <span>التقاط تلقائي من المتصفح</span>
         </div>
       </div>
 

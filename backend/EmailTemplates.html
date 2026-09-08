@@ -4,66 +4,63 @@
 <head>
     <meta charset="UTF-8">
     <style>
-        @page { size: A4; margin: 5mm; }
-        body { font-family: 'Arial', sans-serif; margin: 0; padding: 0; color: #000; background: #fff; line-height: 1.3; }
+        @page { size: A4 portrait; margin: 15mm 12mm; }
+        body { font-family: 'Arial', sans-serif; margin: 0; padding: 0; color: #000; background: #fff; line-height: 1.4; }
         
-        .page-wrapper { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+        .page-wrapper { width: 100%; box-sizing: border-box; }
         
-        .form-container { border: 2px solid #000; width: 100%; box-sizing: border-box; position: relative; padding: 0; margin-bottom: 5px; }
+        .form-container { border: 2.5px solid #000; width: 100%; box-sizing: border-box; position: relative; padding: 0; }
         
-        .header-table { width: 100%; border-collapse: collapse; border-bottom: 2px solid #000; table-layout: fixed; }
-        .header-table td { border-left: 2px solid #000; padding: 2px; vertical-align: middle; text-align: center; }
+        .header-table { width: 100%; border-collapse: collapse; border-bottom: 2.5px solid #000; table-layout: fixed; }
+        .header-table td { border-left: 2px solid #000; padding: 8px 6px; vertical-align: middle; text-align: center; }
         .header-table td:last-child { border-left: none; }
         
-        .logo-box { width: 35%; text-align: left; padding: 2px 10px !important; }
-        .logo-img { height: 30px; vertical-align: middle; }
-        .company-name { font-weight: bold; font-size: 10pt; margin-left: 8px; display: inline-block; vertical-align: middle; }
+        .logo-box { width: 35%; text-align: left; padding: 6px 14px !important; }
+        .logo-img { height: 42px; vertical-align: middle; }
+        .company-name { font-weight: bold; font-size: 11pt; margin-left: 10px; display: inline-block; vertical-align: middle; }
         
-        .title-box { width: 40%; font-size: 13pt; font-weight: bold; }
+        .title-box { width: 40%; font-size: 16pt; font-weight: bold; color: #1e3a8a; }
         
-        .meta-box { width: 25%; font-size: 7pt; font-weight: bold; text-align: center; padding: 0 !important; }
+        .meta-box { width: 25%; font-size: 8pt; font-weight: bold; text-align: center; padding: 4px !important; }
         .meta-inner-table { width: 100%; border-collapse: collapse; }
-        .meta-inner-table td { border: none; padding: 1px 4px; text-align: right; }
-        .meta-inner-table td:first-child { text-align: left; font-weight: normal; }
+        .meta-inner-table td { border: none; padding: 2px 6px; text-align: right; }
+        .meta-inner-table td:first-child { text-align: left; font-weight: normal; color: #555; }
 
-        .types-container { padding: 4px; border-bottom: 2px solid #000; text-align: center; background-color: #fcfcfc; font-size: 8.5pt; }
-        .type-item { display: inline-block; margin: 0 6px; font-weight: bold; }
+        .types-container { padding: 8px 10px; border-bottom: 2px solid #000; text-align: center; background-color: #f8fafc; font-size: 9.5pt; }
+        .type-item { display: inline-block; margin: 0 10px; font-weight: bold; }
         .check-box { 
             display: inline-block; 
-            width: 14px; 
-            height: 14px; 
+            width: 16px; 
+            height: 16px; 
             border: 1.5px solid #000; 
             vertical-align: middle; 
             margin-right: 4px; 
-            line-height: 13px; 
-            font-size: 9pt; 
+            line-height: 15px; 
+            font-size: 11pt; 
             text-align: center;
+            background: #fff;
         }
 
         .content-table { width: 100%; border-collapse: collapse; }
-        .content-table td { padding: 4px 12px; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 9.5pt; height: 22px; }
-        .label { font-weight: bold; margin-left: 5px; }
-        .value { color: #1e3a8a; font-weight: bold; font-family: 'Courier New', monospace; font-size: 10pt; }
+        .content-table td { padding: 8px 16px; border-bottom: 1px solid rgba(0,0,0,0.08); font-size: 10.5pt; height: 32px; }
+        .label { font-weight: bold; margin-left: 6px; color: #111; }
+        .value { color: #1e3a8a; font-weight: bold; font-family: 'Courier New', monospace; font-size: 11pt; }
 
-        .notes-row { width: 100%; border-bottom: 2px solid #000; padding: 6px 12px; min-height: 25px; font-size: 9.5pt; }
+        .notes-row { width: 100%; border-bottom: 2px solid #000; padding: 10px 16px; min-height: 45px; font-size: 10.5pt; box-sizing: border-box; }
 
         .sig-table { width: 100%; border-collapse: collapse; }
-        .sig-table td { width: 25%; text-align: center; font-weight: bold; font-size: 9pt; vertical-align: top; padding: 5px 0 25px 0; border-left: none; }
-        .sig-underline { display: block; margin-top: 15px; border-top: 1px dashed #000; width: 70%; margin-left: auto; margin-right: auto; }
+        .sig-table td { width: 25%; text-align: center; font-weight: bold; font-size: 10pt; vertical-align: top; padding: 12px 6px 35px 6px; border-left: none; }
+        .sig-underline { display: block; margin-top: 22px; border-top: 1px dashed #000; width: 75%; margin-left: auto; margin-right: auto; }
         
-        .stamp-text { font-size: 7pt; font-weight: bold; font-family: monospace; border: 1px solid #cbd5e1; padding: 2px 4px; display: inline-block; margin-top: 2px; border-radius: 2px; }
-        .approver-email { font-size: 6.5pt; font-family: monospace; color: #475569; margin-top: 2px; display: block; font-weight: bold; overflow-wrap: break-word; line-height: 1; }
+        .stamp-text { font-size: 8pt; font-weight: bold; font-family: monospace; border: 1.5px solid #cbd5e1; padding: 3px 6px; display: inline-block; margin-top: 4px; border-radius: 4px; }
+        .approver-email { font-size: 7.5pt; font-family: monospace; color: #475569; margin-top: 4px; display: block; font-weight: bold; overflow-wrap: break-word; line-height: 1.2; }
 
-        .footer { text-align: center; padding: 4px; font-size: 7pt; font-weight: bold; border-top: 1px solid #000; color: #64748b; }
-        
-        .cut-line { width: 100%; border-top: 2px dashed #ccc; margin: 10px 0; text-align: center; position: relative; }
-        .cut-line span { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #fff; padding: 0 10px; font-size: 8pt; color: #999; }
+        .footer { text-align: center; padding: 8px; font-size: 8pt; font-weight: bold; border-top: 1.5px solid #000; color: #475569; background: #f8fafc; }
     </style>
 </head>
 <body>
     <div class="page-wrapper">
-        <? for (var i = 0; i < 2; i++) { ?>
-            <div class="form-container">
+        <div class="form-container">
                 <table class="header-table">
                     <tr>
                         <td class="meta-box">
@@ -159,10 +156,6 @@
 
                 <div class="footer">الدقهلية للدواجن (مصنع أعلاف السادات) - ادارة الموارد البشرية</div>
             </div>
-            <? if (i === 0) { ?>
-                <div class="cut-line"><span>✂ يتم القص من هنا</span></div>
-            <? } ?>
-        <? } ?>
     </div>
 </body>
 </html>

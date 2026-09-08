@@ -127,7 +127,18 @@ function doPost(e) {
     const today = formatSimpleDate(data.issueDate || new Date());
     const startDate = formatSimpleDate(data.startDate);
     const endDate = formatSimpleDate(data.endDate);
-    const submitterEmail = data.submitterEmail || Session.getActiveUser().getEmail() || 'غير محدد';
+
+    // استخراج بريد حساب Google النشط من المتصفح تلقائياً (مثل Google Forms)
+    var browserEmail = '';
+    try {
+      browserEmail = Session.getActiveUser().getEmail();
+    } catch (e) {}
+    if (!browserEmail && typeof Session.getEffectiveUser === 'function') {
+      try {
+        browserEmail = Session.getEffectiveUser().getEmail();
+      } catch (e) {}
+    }
+    const submitterEmail = browserEmail || data.submitterEmail || 'مسجل بحساب Google';
 
     sheet.appendRow([
       requestId, 

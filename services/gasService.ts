@@ -4,7 +4,7 @@ import { LeaveRequest, Employee } from '../types';
 /**
  * إعدادات الاتصال بـ Google Apps Script و Google Sheets
  */
-export const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyLJWjwoZlqlnUX0sRrAtmFZ5H9hBETxgBSMZS9z9Xt6i1837Kv7mdXdfHGU2sV-Bb5/exec';
+export const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyehFfrNvRmKWtivpKJv7CtsGfMh3gdpE70xhhqyzPBGHGAQWv7AbU7fcgq2mtqgg6scA/exec';
 export const SPREADSHEET_ID = '1n2sp5TNNGL3M5_LRNJ7IMLXXWoH6-kL8r4eGZokISCs';
 export const SHEET_DATA_TAB = 'data';
 
@@ -32,8 +32,7 @@ const INITIAL_SHEET_SEED: Employee[] = [
 
 /**
  * الحصول على البريد الإلكتروني لحساب Google المفتوح (مقدم الطلب)
- * يبحث أولاً في معاملات الرابط (URL parameters) ثم في الذاكرة المحلية (localStorage)
- * ولا يتم تثبيت بريد المشرف كافتراضي حتى يظهر لكل مستخدم حسابه الخاص
+ * يقرأ الحساب التلقائي من رابط الجلسة أو الذاكرة المحلية دون إجبار المستخدم على الاختيار اليدوي
  */
 export const getInitialSubmitterEmail = (): string => {
   // 1. فحص معاملات الرابط (مثل: ?email=name@dakahlia.net أو ?user=...)
@@ -55,7 +54,37 @@ export const getInitialSubmitterEmail = (): string => {
     }
   }
 
-  // إذا لم يتم العثور على أي بريد سابق، نرجعه فارغاً ليقوم المستخدم بإدخال حسابه
+  return '';
+};
+
+/**
+ * الكشف التلقائي عن حساب Google المفتوح في المتصفح في الخلفية
+ * يعمل بنفس أسلوب Google Forms تماماً دون الحاجة لأي تدخل من المستخدم
+ */
+export const detectActiveGoogleUser = async (): Promise<string> => {
+  // أولاً: التحقق من الرابط إذا تم تمرير الإيميل كمعامل تلقائي
+  const initial = getInitialSubmitterEmail();
+  if (initial) return initial;
+
+  // ثانياً: الاستعلام من خادم Google Apps Script لجلب البريد المرتبط بجلسة المتصفح الحالية
+  try {
+    const gasUrl = `${DEFAULT_GAS_URL}?action=getActiveUser&t=${Date.now()}`;
+    const res = await fetch(gasUrl, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.email && data.email.includes('@')) {
+        const clean = data.email.trim().toLowerCase();
+        setStoredSubmitterEmail(clean);
+        return clean;
+      }
+    }
+  } catch (e) {
+    console.log('Google session check (silent):', e);
+  }
+
   return '';
 };
 
