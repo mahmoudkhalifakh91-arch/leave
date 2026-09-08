@@ -11,7 +11,7 @@ export enum RequestStatus {
   PENDING_MANAGER = 'في انتظار المدير المباشر',
   PENDING_DEPT_HEAD = 'في انتظار مدير الإدارة',
   PENDING_HR = 'في انتظار الموارد البشرية',
-  APPROVED = 'معتمد نهائياً',
+  APPROVED = 'APPROVED&FILED',
   REJECTED = 'مرفوض'
 }
 

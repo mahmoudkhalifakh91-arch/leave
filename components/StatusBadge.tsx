@@ -3,16 +3,29 @@ import React from 'react';
 import { RequestStatus } from '../types';
 
 interface StatusBadgeProps {
-  status: RequestStatus;
+  status: RequestStatus | string;
 }
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
+  const isApproved = 
+    status === RequestStatus.APPROVED || 
+    status === 'APPROVED' || 
+    status === 'APPROVED&FILED' || 
+    status === 'معتمد نهائياً';
+
+  const isRejected = 
+    status === RequestStatus.REJECTED || 
+    status === 'REJECTED' || 
+    status === 'مرفوض';
+
   const getStyles = () => {
+    if (isApproved) {
+      return "bg-green-100 text-green-700 border-green-200";
+    }
+    if (isRejected) {
+      return "bg-red-100 text-red-700 border-red-200";
+    }
     switch (status) {
-      case RequestStatus.APPROVED:
-        return "bg-green-100 text-green-700 border-green-200";
-      case RequestStatus.REJECTED:
-        return "bg-red-100 text-red-700 border-red-200";
       case RequestStatus.PENDING_MANAGER:
       case RequestStatus.PENDING_DEPT_HEAD:
       case RequestStatus.PENDING_HR:
@@ -23,17 +36,17 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   };
 
   const getIcon = () => {
-    switch (status) {
-      case RequestStatus.APPROVED: return "fa-check-circle";
-      case RequestStatus.REJECTED: return "fa-times-circle";
-      default: return "fa-clock";
-    }
+    if (isApproved) return "fa-check-circle";
+    if (isRejected) return "fa-times-circle";
+    return "fa-clock";
   };
+
+  const displayText = isApproved ? 'APPROVED&FILED' : status;
 
   return (
     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${getStyles()}`}>
       <i className={`fas ${getIcon()}`}></i>
-      {status}
+      {displayText}
     </span>
   );
 };

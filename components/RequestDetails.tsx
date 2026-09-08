@@ -109,7 +109,7 @@ export const RequestDetails: React.FC<RequestDetailsProps> = ({ request, onClose
                   </td>
                   <td>
                     الموارد البشرية<span class="sig-underline"></span>
-                    <div class="stamp-text" style="color: #1e40af; border-color: #1e40af;">REVIEWED</div>
+                    <div class="stamp-text" style="color: #166534; border-color: #166534;">APPROVED&amp;FILED</div>
                     <span class="approver-email">${LOCAL_CONFIG_EMAILS.HR}</span>
                   </td>
               </tr>
@@ -277,7 +277,7 @@ export const RequestDetails: React.FC<RequestDetailsProps> = ({ request, onClose
                   <div className="flex items-center gap-4 w-full max-w-md">
                      <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold shrink-0">3</div>
                      <div className="flex-1 p-4 bg-blue-50 rounded-xl border border-blue-100 text-right">
-                        <div className="text-xs font-black text-blue-700">الاعتماد والتوثيق النهائي (HR)</div>
+                        <div className="text-xs font-black text-blue-700">الاعتماد والتوثيق النهائي (APPROVED &amp; FILED)</div>
                         <div className="text-[11px] text-blue-900 font-bold">إدارة الموارد البشرية</div>
                         <div className="text-[10px] text-blue-700 font-mono mt-0.5" dir="ltr">{LOCAL_CONFIG_EMAILS.HR}</div>
                      </div>
