@@ -57,11 +57,36 @@ const CONFIG = {
       name: "أ/ مدير الاداره"
     },
     HR: {
+      // قائمة إيميلات مسؤولي الموارد البشرية (يمكن وضع 3 إيميلات أو أكثر لتصلهم جميعاً نسخة من طلب الإجازة)
+      emails: [
+        "sadat.planning.officer@dakahlia.net",
+        "hr1@dakahlia.net",
+        "hr2@dakahlia.net"
+      ],
       email: "sadat.planning.officer@dakahlia.net",
       name: "إدارة الموارد البشرية"
     }
   }
 };
+
+/**
+ * جلب جميع إيميلات مسؤولي الموارد البشرية مفصولة بفواصل للإرسال الجماعي
+ */
+function getHREmails() {
+  const hrConfig = CONFIG.FINAL_APPROVERS && CONFIG.FINAL_APPROVERS.HR;
+  if (!hrConfig) return "sadat.planning.officer@dakahlia.net";
+  
+  if (Array.isArray(hrConfig.emails) && hrConfig.emails.length > 0) {
+    return hrConfig.emails.filter(Boolean).map(function(e) { return String(e).trim(); }).join(', ');
+  }
+  if (Array.isArray(hrConfig.email) && hrConfig.email.length > 0) {
+    return hrConfig.email.filter(Boolean).map(function(e) { return String(e).trim(); }).join(', ');
+  }
+  if (typeof hrConfig.emails === 'string' && hrConfig.emails.trim()) {
+    return hrConfig.emails.trim();
+  }
+  return String(hrConfig.email || 'sadat.planning.officer@dakahlia.net').trim();
+}
 
 /**
  * التحقق مما إذا كان الطلب يخص مدير المخازن (أ/ أحمد حمدان)
@@ -270,7 +295,7 @@ function handleWorkflowStep(id, action, role) {
       sheet.getRange(rowIndex, 11).setValue('PENDING_HR');
       sheet.getRange(rowIndex, 14).setValue(JSON.stringify(signatures));
       let pdf = generateFinalPDF(id, empData, signatures);
-      sendApprovalMail(CONFIG.FINAL_APPROVERS.HR.email, 'الموارد البشرية', id, empData, pdf);
+      sendApprovalMail(getHREmails(), 'الموارد البشرية', id, empData, pdf);
       return { message: "تم اعتماد إجازة مدير المخازن بنجاح من أ/ عبد الهادي صالح وإحالتها للموارد البشرية." };
     }
   } else {
@@ -296,7 +321,7 @@ function handleWorkflowStep(id, action, role) {
       sheet.getRange(rowIndex, 11).setValue('PENDING_HR');
       sheet.getRange(rowIndex, 14).setValue(JSON.stringify(signatures));
       let pdf = generateFinalPDF(id, empData, signatures);
-      sendApprovalMail(CONFIG.FINAL_APPROVERS.HR.email, 'الموارد البشرية', id, empData, pdf);
+      sendApprovalMail(getHREmails(), 'الموارد البشرية', id, empData, pdf);
       return { message: "تم اعتماد مدير الإدارة بنجاح." };
     }
   }
@@ -310,7 +335,8 @@ function handleWorkflowStep(id, action, role) {
     let pdf = generateFinalPDF(id, empData, signatures);
     if (empData.employeeEmail) {
       GmailApp.sendEmail(empData.employeeEmail, `✅ تم اعتماد إجازتك - رقم ${id}`, `تم اعتماد وتوثيق طلبك بالكامل (APPROVED).`, {
-        attachments: [pdf]
+        attachments: [pdf],
+        cc: getHREmails()
       });
     }
     return { message: "تم الاعتماد النهائي للإجازة وتوثيقها (APPROVED)." };
@@ -329,6 +355,14 @@ function generateFinalPDF(id, data, signatures) {
 }
 
 function sendApprovalMail(targetEmail, role, id, data, pdfBlob) {
+  let recipients = targetEmail;
+  if (Array.isArray(recipients)) {
+    recipients = recipients.filter(Boolean).map(function(e) { return String(e).trim(); }).join(', ');
+  } else if (typeof recipients === 'string') {
+    recipients = recipients.trim();
+  }
+  if (!recipients) return;
+
   const baseUrl = ScriptApp.getService().getUrl();
   const approveUrl = `${baseUrl}?id=${id}&action=approve&role=${encodeURIComponent(role)}`;
   const rejectUrl = `${baseUrl}?id=${id}&action=reject&role=${encodeURIComponent(role)}`;
@@ -360,7 +394,7 @@ function sendApprovalMail(targetEmail, role, id, data, pdfBlob) {
     </div>
   `;
 
-  GmailApp.sendEmail(targetEmail, `مراجعة طلب إجازة: ${data.employeeName} (${id})`, "", {
+  GmailApp.sendEmail(recipients, `مراجعة طلب إجازة: ${data.employeeName} (${id})`, "", {
     htmlBody: htmlBody,
     attachments: [pdfBlob]
   });

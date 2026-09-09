@@ -148,7 +148,7 @@
                             <span class="sig-underline"></span>
                             <? if (signatures && signatures.indexOf('HR') > -1) { ?>
                                 <div class="stamp-text" style="color: #166534; border-color: #166534;">APPROVED</div>
-                                <span class="approver-email"><?= config.FINAL_APPROVERS.HR.email ?></span>
+                                <span class="approver-email"><?= Array.isArray(config.FINAL_APPROVERS.HR.emails) && config.FINAL_APPROVERS.HR.emails.length > 0 ? config.FINAL_APPROVERS.HR.emails[0] : config.FINAL_APPROVERS.HR.email ?></span>
                             <? } ?>
                         </td>
                     </tr>

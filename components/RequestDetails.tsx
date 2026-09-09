@@ -19,7 +19,12 @@ const LOCAL_CONFIG_EMAILS: any = {
   },
   WAREHOUSE_DIRECTOR_MANAGER: "abdelhady.saleh@dakahlia.net",
   DEPT_HEAD: "ahmed.hamdan@dakahlia.net",
-  HR: "sadat.planning.officer@dakahlia.net"
+  HR: "sadat.planning.officer@dakahlia.net",
+  HR_EMAILS: [
+    "sadat.planning.officer@dakahlia.net",
+    "hr1@dakahlia.net",
+    "hr2@dakahlia.net"
+  ]
 };
 
 export const RequestDetails: React.FC<RequestDetailsProps> = ({ request, onClose }) => {
@@ -279,7 +284,9 @@ export const RequestDetails: React.FC<RequestDetailsProps> = ({ request, onClose
                      <div className="flex-1 p-4 bg-blue-50 rounded-xl border border-blue-100 text-right">
                         <div className="text-xs font-black text-blue-700">الاعتماد والتوثيق النهائي (APPROVED)</div>
                         <div className="text-[11px] text-blue-900 font-bold">إدارة الموارد البشرية</div>
-                        <div className="text-[10px] text-blue-700 font-mono mt-0.5" dir="ltr">{LOCAL_CONFIG_EMAILS.HR}</div>
+                        <div className="text-[10px] text-blue-700 font-mono mt-0.5" dir="ltr">
+                          {LOCAL_CONFIG_EMAILS.HR_EMAILS ? LOCAL_CONFIG_EMAILS.HR_EMAILS.join(' , ') : LOCAL_CONFIG_EMAILS.HR}
+                        </div>
                      </div>
                   </div>
                </div>

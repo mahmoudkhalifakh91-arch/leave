@@ -109,6 +109,19 @@ DEPARTMENTS: {
   "المنتج التام": { managerEmail: "finished.store@dakahlia.net", managerName: "أ/ محمود غالى" },
   "المخازن العامة": { managerEmail: "general.store@dakahlia.net", managerName: "أ/ رمضان زينهم" },
   "حركة المعدات": { managerEmail: "equipment.mgr@dakahlia.net", managerName: "أ/ ايمن عليوه" }
+},
+
+// مسؤولي الموارد البشرية (وصول الإشعار لأكثر من شخص):
+FINAL_APPROVERS: {
+  DEPT_HEAD: { email: "ahmed.hamdan@dakahlia.net", name: "أ/ مدير الاداره" },
+  HR: {
+    emails: [
+      "sadat.planning.officer@dakahlia.net",
+      "hr1@dakahlia.net", // الإيميل الثاني
+      "hr2@dakahlia.net"  // الإيميل الثالث
+    ],
+    name: "إدارة الموارد البشرية"
+  }
 }`}
         </pre>
       </div>
